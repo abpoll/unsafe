@@ -1,0 +1,90 @@
+# We need the county fips for our case study
+# For the generic UNSAFE framework, user
+# needs to fill in the fips
+FIPS: 42101
+
+# We also need to specify the state abbreviation
+# and alpha code. It's something that can be generated
+# from files that map county fips and state fips
+# to county names and state names & abbreviations, respectively
+# but we don't need to optimize so early.
+# We will have a function that replaces
+# STATE and STATE_ALPHA holders in certain config
+# options below and replace them with the STATE
+# and STATE_ALPHA values
+STATE: "PA"
+STATE_ALPHA: "42"
+
+# Below are urls and api endpoints
+# for obtaining all raw data
+# We will organize by county, state
+# and national downloads
+# And then, within each, we will
+# organize by url and api calls
+# Finally, we will include key/val pairs
+# for component type (i.e. haz, exp, vuln)
+# and other identifiers (i.e. social, physical)
+# that are useful for organizational logic
+
+# There are different rules for downloading
+# data from API or URL endpoints, since the former
+# require some parameters whereas the latter
+# point straight to a file to download
+# We will first have keys
+# for api/url 
+# Then we will structure by keys
+# for the data type (i.e. haz/exp)
+# that will define file directories and paths
+# These all need to be nested within 
+# the following keys
+# county, state, national, external
+# we want to download data from
+# largest to smallest scale (i.e. national, state, county)
+# because of their set-type relationships (i.e. many counties in one state
+# and many states in one nation)
+# Some data downloads are not scale based, so
+# downloaded once and from the "external" key
+
+download:
+  county:
+    api:
+      exp: 
+        # NSI has an API endpoint
+        # We call it county by county
+        nsi: "https://nsi.sec.usace.army.mil/nsiapi/structures"
+    url:
+      # We use the national flood hazard layer for flood zones
+      # These URLs currently are not in a structured format, as far as I know
+      # and to generalize this may be better suited to a more dynamic
+      # speficiation (i.e. maybe with url prefix and then the {fname}.zip specified
+      # more dynamically)
+        haz:
+          nfhl: "https://hazards.fema.gov/nfhlv2/output/County/420757_20230701.zip"
+  state:
+    url:
+      vuln:
+        social:
+        # replace STATE with state fips in the download rule
+        # We have a helper function in a util/ directory that replaces
+        # STATE with the STATE key at the top of this config.yml file
+        # This is the NOAA SOVI data
+        noaa: "https://coast.noaa.gov/htdata/SocioEconomic/SoVI2010/SoVI_2010_STATE.zip"
+      ref:
+        # replace STATE_ALPHA with state alpha in the download rule
+        # We have a helper function in a util/ directory that replaces
+        # STATE_ALPHA with the STATE_ALPHA key at the top of this config.yml file
+        # Tract, block group, and block geospatial boundaries are available at state level
+        tract: "https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_STATE_ALPHA_tract.zip"
+        bg: "https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_STATE_ALPHA_bg.zip"
+        block: "https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_STATE_ALPHA_tabblock20.zip"
+  national:
+    url:
+      vuln:
+        social:
+          # CEJST and low moderate income designations available for the whole country
+          cejst: "https://static-data-screeningtool.geoplatform.gov/data-versions/1.0/data/score/downloadable/1.0-communities.csv"
+          lmi: "https://www.hudexchange.info/sites/onecpd/assets/File/ACS_2015_lowmod_blockgroup_all.xlsx"
+      ref:
+        # County and zip code tabulation area spatial data available for the whole country
+        county: "https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_us_county.zip"
+        zcta: "https://www2.census.gov/geo/tiger/TIGER2022/ZCTA520/tl_2022_us_zcta520.zip"

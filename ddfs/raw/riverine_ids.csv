@@ -1,0 +1,47 @@
+﻿Occupancy,Number of Stories,Basement,Source,Description,Damage Function ID
+RES1,1,No Basement,USACE - IWR,"One story, no basement, Structure",129
+RES1,1,Basement,BCAR - Jan 2011,"One story, w/ basement, Structure (B14)",704
+RES1,2,No Basement,FIA,"Two floors, no basement, Structure, A-Zone",107
+RES1,2,Basement,FIA (MOD.),"Two floors, w/ basement, Structure, A-Zone",108
+RES1,3,No Basement,FIA,"Three or more floors, no basement, Structure, AZone",109
+RES1,3,Basement,FIA (MOD.),"Three or more floors, w/ basement, Structure, AZone",110
+RES1,Split Level,No Basement,FIA,"Split level, no basement, Structure, A-Zone",111
+RES1,Split Level,Basement,FIA (MOD.),"Split level, w/ basement, Structure, A-Zone",112
+RES2,1,No Basement or Basement,FIA,"Mobile home, structure, AZone",189
+RES3A,1 or more,No Basement,USACE Chicago,"Apartment Unit Grade, Structure",204
+RES3A,1 or more,Basement,USACE,"Apartment Unit Sub-Grade,",205
+RES3B,1 or more,No Basement,USACE Chicago,"Apartment Unit Grade, Structure",204
+RES3B,1 or more,Basement,USACE Chicago,"Apartment Unit Sub-Grade, Structure",205
+RES3C,1 or more,No Basement,USACE Chicago,"Apartment Unit Grade, Structure",204
+RES3C,1 or more,Basement,USACE Chicago,"Apartment Unit Sub-Grade, Structure",205
+RES3D,1 or more,No Basement,USACE Chicago,"Apartment Unit Grade, Structure",204
+RES3D,1 or more,Basement,USACE Chicago,"Apartment Unit Sub-Grade, Structure",205
+RES3E,1 or more,No Basement,USACE Chicago,"Apartment Unit Grade, Structure",204
+RES3E,1 or more,Basement,USACE Chicago,"Apartment Unit Sub-Grade, Structure",205
+RES3F,1 or more,No Basement,USACE Chicago,"Apartment Unit Grade, Structure",204
+RES3F,1 or more,Basement,USACE Chicago,"Apartment Unit Sub-Grade, Structure",205
+RES4,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of Hotel & Motel, structure",209
+RES5,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average institutional dormitory, structure [Note that there is no specific damage function available, so was developed from the RES6 Default]",214
+RES6,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Nursing Home, structure",215
+COM1,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 47 Retail classes, structure",217
+COM2,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 22 wholesale/warehouse classes, structure",341
+COM3,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 16 personal & repair service classes, structure",375
+COM4,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average prof/tech services, structure,",431
+COM5,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Bank, structure",467
+COM6,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Hospital, structure",474
+COM7,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 4 Medical Office/clinic classes, structure",475
+COM8,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 15 Entertainment/Recreation classes, structure",493
+COM9,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 3 theatre classes, structure",532
+COM10,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Garage, structure",543
+IND1,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 16 Heavy Industrial classes, structure",545
+IND2,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 14 Light Industrial classes, structure",559
+IND3,"Low-, Mid-, or High-Rise",Basement or No Basement,USACE Galveston,"Average of 10 Food/Drug/Chemical classes, structure",575
+IND4,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 4 Metals/Minerals processing classes, structure",586
+IND5,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average High Technolog, structure [Note: No specific damage function so uses IND3 default]",591
+IND6,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 8 Construction classes, structure",592
+AGR1,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average of 3 Agriculture classes, structure",616
+REL1,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Church, structure",624
+GOV1,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average government services, structure",631
+GOV2,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average emergency response, structure",640
+EDU1,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average school, structure",643
+EDU2,"Low-, Mid-, or HighRise",Basement or No Basement,USACE Galveston,"Average college/university, structure [Note: No specific damage function so uses EDUI default]",652

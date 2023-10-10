@@ -1,0 +1,34 @@
+﻿,Occupy_Class,Occupancy,Occ_Desc1,Occ_Desc2,SIC_code
+1,RES,RES1,Residential,Single Family Dwelling,
+2,RES,RES2,Residential,Mobile Home,
+3,RES,RES3A,Residential,Multi Family Dwelling Duplex,
+4,RES,RES3B,Residential,Multi Family Dwelling 3-4 Units,
+5,RES,RES3C,Residential,Multi Family Dwelling 5-9 Units,
+6,RES,RES3D,Residential,Multi Family Dwelling 10-19 Units,
+7,RES,RES3E,Residential,Multi Family Dwelling 20-49 Units,
+8,RES,RES3F,Residential,Multi Family Dwelling 50+ Units,
+9,RES,RES4,Residential,Temporary Lodging,70
+10,RES,RES5,Residential,Institutional Dormitory,
+11,RES,RES6,Residential,Nursing Home,"8051, 8052, 8059"
+12,COM,COM1,Commercial,Retail Trade,"52, 53, 54, 55, 56, 57, 59"
+13,COM,COM2,Commercial,Wholesale Trade,"42, 50, 51"
+14,COM,COM3,Commercial,Personal and Repair Services,"72, 75, 76, 83, 88"
+15,COM,COM4,Commercial,Business/Professional/Technical Services,"40, 41, 44, 45, 46, 47, 49, 61, 62, 63, 64, 65, 67, 73, 78 (except 7832), 81, 87, 89"
+16,COM,COM5,Commercial,Depository Institutions,60
+17,COM,COM6,Commercial,Hospital,"8062, 8063, 8069"
+18,COM,COM7,Commercial,Medical Office/Clinic,"80 (except 8051, 8052, 8059, 8062, 8063, 8069)"
+19,COM,COM8,Commercial,Entertainment & Recreation,"48, 58, 79 (except 7911), 84"
+20,COM,COM9,Commercial,Theaters,"7832, 7911"
+21,COM,COM10,Commercial,Parking,
+22,IND,IND1,Industrial,Heavy,"22, 24, 26, 32, 34, 35 (except 3571, 3572), 37"
+23,IND,IND2,Industrial,Light,"23, 25, 27, 30, 31, 36 (except 3671, 3672, 3674), 38, 39"
+24,IND,IND3,Industrial,Food/Drugs/Chemicals,"20, 21, 28, 29"
+25,IND,IND4,Industrial,Metals/Minerals Processing,"10, 12, 13, 14, 33"
+26,IND,IND5,Industrial,High Technology,"3571, 3572, 3671, 3672, 3674"
+27,IND,IND6,Industrial,Construction,"15, 16, 17"
+28,AGR,AGR1,Agriculture,Agriculture,"01, 02, 07, 08, 09"
+29,REL,REL1,Religion/Non-Profit,Church/Membership Organizations,86
+30,GOV,GOV1,Government,General Services,"43, 91, 92 (except 9221, 9224), 93, 94, 95, 96, 97"
+31,GOV,GOV2,Government,Emergency Response,"9221, 9224"
+32,EDU,EDU1,Education,Schools/Libraries,"82 (except 8221, 8222)"
+33,EDU,EDU2,Education,Colleges/Universities,"8221, 8222"
