@@ -1,0 +1,16 @@
+from util.download import dwnld_out_files
+
+configfile: "config.yaml"
+
+# Run the download script
+# Outputs all files in raw/
+# that are specified by the
+# key/value pairs 
+# under config["download"]
+# Should be able to create
+# functions in util/download.py
+# that generate the list of
+# output files for us
+rule download_data:
+    output:
+        [rawdata for rawdata in dwnld_out_files(config)]

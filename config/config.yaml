@@ -64,19 +64,19 @@ download:
     url:
       vuln:
         social:
-        # replace STATE with state fips in the download rule
-        # We have a helper function in a util/ directory that replaces
-        # STATE with the STATE key at the top of this config.yml file
-        # This is the NOAA SOVI data
-        noaa: "https://coast.noaa.gov/htdata/SocioEconomic/SoVI2010/SoVI_2010_STATE.zip"
+          # replace STATE with state fips in the download rule
+          # We have a helper function in a util/ directory that replaces
+          # STATE with the STATE key at the top of this config.yml file
+          # This is the NOAA SOVI data
+          noaa: "https://coast.noaa.gov/htdata/SocioEconomic/SoVI2010/SoVI_2010_{STATE}.zip"
       ref:
         # replace STATE_ALPHA with state alpha in the download rule
         # We have a helper function in a util/ directory that replaces
         # STATE_ALPHA with the STATE_ALPHA key at the top of this config.yml file
         # Tract, block group, and block geospatial boundaries are available at state level
-        tract: "https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_STATE_ALPHA_tract.zip"
-        bg: "https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_STATE_ALPHA_bg.zip"
-        block: "https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_STATE_ALPHA_tabblock20.zip"
+        tract: "https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{STATE_ALPHA}_tract.zip"
+        bg: "https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_{STATE_ALPHA}_bg.zip"
+        block: "https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_{STATE_ALPHA}_tabblock20.zip"
   national:
     url:
       vuln:
@@ -88,3 +88,6 @@ download:
         # County and zip code tabulation area spatial data available for the whole country
         county: "https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_us_county.zip"
         zcta: "https://www2.census.gov/geo/tiger/TIGER2022/ZCTA520/tl_2022_us_zcta520.zip"
+
+api_ext:
+  nsi: ".pqt"
