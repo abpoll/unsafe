@@ -4,64 +4,9 @@ from os.path import join
 from pathlib import Path
 import yaml
 from yaml.loader import SafeLoader
-import pandas as pd
-
-os.environ["USE_PYGEOS"] = "0"
-
-'''
-Configuring the main set up for
-implementing our utils
-'''
-
-# Absolute directory
-# The root of the project directory 
-# is obtained with the Path(os.getcwd()).parents[1]
-# command. parents[0] would take us to workflow/
-ABS_DIR = os.path.abspath(Path(os.getcwd()).parents[1])
-
-# From ABS_DIR, we can access our config.yaml file
-# for the project
-config_filep = join(ABS_DIR, 'config', 'config.yaml')
-
-# We can also specify the filepath to the
-# raw data directory
-FR = join(ABS_DIR, "data", "raw")
-
-# Open the config file and load
-with open(config_filep) as f:
-    config = yaml.load(f, Loader=SafeLoader)
-
-# Get our constants
-# In the future, when this codebase
-# is modified to work for more than one county
-# the snakemake rule will use a wildcard or the expand
-# function to send in one fips, state, and state_alpha
-# from the config file. So, noting this
-# code block as a place where logic will need
-# to change
-# TODO  
-FIPS = config['FIPS']
-STATE = config['STATE']
-STATE_ALPHA = config['STATE_ALPHA']
-
-# Get a dict of these constants
-FIPS_DICT = {
-    '{FIPS}': FIPS,
-    '{STATE}': STATE,
-    '{STATE_ALPHA}': STATE_ALPHA
-}
-
-# Get the files we need downloaded
-# These are specified in the "download" key 
-# in the config file
-# We transpose because one of the utils
-# needs to return a list of the output files
-# It is easy to use the .itertuples() command
-# and get the information for file directories
-# and file names in a row-wise fashion
-files = pd.json_normalize(config['download'], sep='_').T
-# Get the file extensions for api endpoints
-exts = config['api_ext']
+import requests
+from util.files import *
+from util.const import *
 
 '''
 Define our utils
@@ -71,19 +16,21 @@ Define our utils
 # wildcard terms (FIPS, STATE, STATE_ALPHA)
 # with the appropriate value from the FIPS, STATE, or
 # STATE_ALPHA config values
-def fill_url(endpoint):    
+def fill_url(endpoint, wcard_dict):    
     # Get a list of all the wildcards we need to replace for this endpoint
-    fips_wildcards = [key for key,val in fips_dict.items() if key in endpoint]
-    # Loop through this list and replace that string with the value from
-    # fips_dict
-    for wildcard in fips_wildcards:
-        endpoint = endpoint.replace(wildcard, FIPS_DICT[wildcard])
+    wildcards = [wcard for wcard in URL_WILDCARDS if wcard in endpoint]
+    # Replace the wildcard with the value stored in a wildcard dictionary
+    # Defined in download_data.py
+    for wildcard in wildcards:
+        endpoint = endpoint.replace(wildcard, wcard_dict[wildcard])
         
     return endpoint
 # Example unit test
 # Might be worth it to have a unit test file? 
-test_endpoint = '{STATE}_{STATE_ALPHA}'
-assert fill_url(test_endpoint) == 'PA_42'
+test_endpoint = '{STATE_FIPS}_{STATE_ABBR}'
+wcard_dict = {'{STATE_FIPS}': '42',
+              '{STATE_ABBR}': 'PA'}
+assert fill_url(test_endpoint, wcard_dict) == '42_PA'
 
 # The get_dir helper function
 # For a list of string tokens, we
@@ -106,7 +53,7 @@ def get_dir(str_tokens, endpoint):
         # For example, file_pre will be something like
         # "nsi" which is also our key in the exts dict
         # for the ext we need to use
-        filename = file_pre + exts[file_pre]
+        filename = file_pre + API_EXT[file_pre]
     else:
         # Ext is after the last '.' character
         url_ext = endpoint.split('.')[-1]
@@ -130,6 +77,25 @@ def get_dir(str_tokens, endpoint):
 # Did visual checks for these. Could create assert statements
 # based on the path from the project root
 
+# Helper function to process
+# the DOWNLOAD dataframe for use in 
+# both the dwnld_out_files function
+# and when downloading files
+def process_file(file):
+    # The name follows format like
+    # county_api_exp_nsi
+    # which we will use to get 
+    # file directories
+    name = file[0]
+    # The endpoint is what we're going to
+    # put into a requests call
+    endpoint = file[1]
+    # Split name from the 1st indexed token onwards
+    # Like api_exp_nsi
+    str_tokens = name.split('_')[1:]
+
+    return str_tokens, endpoint
+
 # The dwnld_out_files function
 # For each URL/API endpoint, we want to return the output
 # version of that file
@@ -141,15 +107,7 @@ def dwnld_out_files(files):
     # Return the list of these out files
     out_list = []
     for file in files.itertuples():
-        name = file[0]
-        endpoint = file[1]
-        # In the future, it makes sense to use the county, 
-        # state, and national token to do some distributed
-        # processing, but we are just doing a one county
-        # case study to start. 
-        # So, for now we are going to just use
-        # the strings from the 1st index onwards
-        str_tokens = name.split('_')[1:]
+        str_tokens, endpoint = process_file(file)
         
         # Helper function to return 
         # our filepath from our str_tokens
@@ -165,3 +123,50 @@ def dwnld_out_files(files):
         out_list.append(filepath)
 
     return out_list
+
+# The download_url helper function
+def download_url(url, save_path, chunk_size=128):
+    r = requests.get(url, stream=True)
+    with open(save_path, 'wb') as fd:
+        for chunk in r.iter_content(chunk_size=chunk_size):
+            fd.write(chunk)
+
+# The downlload_api helper function
+# TODO: it may make sense to have some more
+# configuration data about
+# downloading from different apis
+# so want to split this from the download_url
+# function
+def download_api(url, save_path):
+    r = requests.get(url)
+    with open(save_path, 'wb') as fd:
+        fd.write(r)
+
+# The download_raw function
+# We are going to iterate through our 
+# DOWNLOAD dataframe and
+# 1) clean the endpoint
+# 2) get the out filepath
+# 3) download the data
+# 4) write it in the out_filepath
+def download_raw(files, wcard_dict):
+    for file in files.itertuples():
+        # Get the str_tokens and endpoint from the dataframe row
+        str_tokens, endpoint = process_file(file)
+        # Get the out filepath
+        out_filepath = get_dir(str_tokens, endpoint)
+        # "Clean" the endpoint with the wcard_dict
+        endpoint = fill_url(endpoint, wcard_dict)
+
+        # Make sure we can write out data to this filepath
+        prepare_saving(out_filepath)
+
+        # If api, call download_api helper function
+        download_api(endpoint, out_filepath)
+
+        # If url, call download_url helper function
+        # and write file
+        download_url(endpoint, out_filepath)
+
+        # TODO log what is being done
+        print('Downloaded from: ' + str(endpoint))

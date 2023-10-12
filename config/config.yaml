@@ -1,19 +1,13 @@
-# We need the county fips for our case study
-# For the generic UNSAFE framework, user
-# needs to fill in the fips
-FIPS: 42101
-
-# We also need to specify the state abbreviation
-# and alpha code. It's something that can be generated
-# from files that map county fips and state fips
-# to county names and state names & abbreviations, respectively
-# but we don't need to optimize so early.
-# We will have a function that replaces
-# STATE and STATE_ALPHA holders in certain config
-# options below and replace them with the STATE
-# and STATE_ALPHA values
-STATE: "PA"
-STATE_ALPHA: "42"
+# In the future, it makes sense to generate the county & state
+# config from a pre-config script that takes in user input
+# for which counties or areas they want to study. Then, 
+# the config.yaml is generated from this user input
+# in the following structure so that snakemake can do its
+# magic. We would want to distribute jobs by 
+# nation, state, county so they could run in parallel
+FIPS: ["42101"]
+STATE_FIPS: ["42"]
+STATE_ABBR: ["PA"]
 
 # Below are urls and api endpoints
 # for obtaining all raw data
@@ -44,14 +38,14 @@ STATE_ALPHA: "42"
 # and many states in one nation)
 # Some data downloads are not scale based, so
 # downloaded once and from the "external" key
-
+# (this is theoretical, not relevant to our case study)
 download:
   county:
     api:
       exp: 
         # NSI has an API endpoint
         # We call it county by county
-        nsi: "https://nsi.sec.usace.army.mil/nsiapi/structures"
+        nsi: "https://nsi.sec.usace.army.mil/nsiapi/structures?fips={FIPS}"
     url:
       # We use the national flood hazard layer for flood zones
       # These URLs currently are not in a structured format, as far as I know
@@ -64,19 +58,18 @@ download:
     url:
       vuln:
         social:
-          # replace STATE with state fips in the download rule
+          # replace STATE_ABBR with state abbreviation in the download rule
           # We have a helper function in a util/ directory that replaces
           # STATE with the STATE key at the top of this config.yml file
           # This is the NOAA SOVI data
-          noaa: "https://coast.noaa.gov/htdata/SocioEconomic/SoVI2010/SoVI_2010_{STATE}.zip"
+          noaa: "https://coast.noaa.gov/htdata/SocioEconomic/SoVI2010/SoVI_2010_{STATE_ABBR}.zip"
       ref:
-        # replace STATE_ALPHA with state alpha in the download rule
+        # replace STATE_FIPS with st_fips in the download rule
         # We have a helper function in a util/ directory that replaces
-        # STATE_ALPHA with the STATE_ALPHA key at the top of this config.yml file
         # Tract, block group, and block geospatial boundaries are available at state level
-        tract: "https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{STATE_ALPHA}_tract.zip"
-        bg: "https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_{STATE_ALPHA}_bg.zip"
-        block: "https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_{STATE_ALPHA}_tabblock20.zip"
+        tract: "https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{STATE_FIPS}_tract.zip"
+        bg: "https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_{STATE_FIPS}_bg.zip"
+        block: "https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_{STATE_FIPS}_tabblock20.zip"
   national:
     url:
       vuln:
@@ -89,5 +82,10 @@ download:
         county: "https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_us_county.zip"
         zcta: "https://www2.census.gov/geo/tiger/TIGER2022/ZCTA520/tl_2022_us_zcta520.zip"
 
+# We need to keep track of the format different api data is returned in
+# to write it out
 api_ext:
-  nsi: ".pqt"
+  nsi: ".json"
+
+# We need to keep track of which wildcards are used in urls
+url_wildcards: ["{FIPS}", "{STATE_ABBR}", "{STATE_FIPS}"]

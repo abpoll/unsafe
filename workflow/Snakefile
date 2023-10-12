@@ -1,16 +1,30 @@
-from util.download import dwnld_out_files
+from util.files import *
+from util.const import *
+from util.download import *
 
 configfile: "config.yaml"
+
+# 
 
 # Run the download script
 # Outputs all files in raw/
 # that are specified by the
 # key/value pairs 
-# under config["download"]
+# under config[county/state/national]["download"]
 # Should be able to create
 # functions in util/download.py
 # that generate the list of
 # output files for us
+# In the future, it would make sense
+# to distribute downloading across
+# county, state, and national
+# data based on FIPS & STATE_FIPS
+# wildcards and with command line
+# tools like curl
 rule download_data:
     output:
-        dwnld_out_files(config)
+        dwnld_out_files(DOWNLOAD)
+    conda:
+        "workflow/envs/download.yaml"
+    script:
+        "workflow/scripts/download_data.py"
