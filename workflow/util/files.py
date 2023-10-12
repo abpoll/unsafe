@@ -50,4 +50,4 @@ def prepare_saving(filepath):
     if Path(filepath).is_dir():
         Path(filepath).mkdir(parents=True, exist_ok=True)
     else:
-        prepare_saving(Path(filepath).parents[0])
+        prepare_saving(os.path.abspath(Path(filepath).parents[0]))
