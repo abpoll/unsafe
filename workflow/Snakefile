@@ -13,4 +13,4 @@ configfile: "config.yaml"
 # output files for us
 rule download_data:
     output:
-        [rawdata for rawdata in dwnld_out_files(config)]
+        dwnld_out_files(config)
