@@ -2,6 +2,8 @@ from zipfile import ZipFile
 import zipfile_deflate64
 import os
 from pathlib import Path
+# import sys
+# sys.path.append('/jumbo/keller-lab/projects/icom/nsi_unc/workflow')
 from util.unzip import *
 
 # Call zipped_downloads and unzipped_dirs
@@ -12,7 +14,7 @@ from util.unzip import *
 to_unzip = zipped_downloads()
 unzip_dirs = unzipped_dirs()
 
-for i, filepath in to_unzip:
+for i, filepath in enumerate(to_unzip):
     # Get path version of filepath
     path = Path(filepath)
     # The destination directory
