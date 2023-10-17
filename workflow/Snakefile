@@ -1,8 +1,9 @@
 from util.files import *
 from util.const import *
 from util.download import *
+from util.unzip import *
 
-configfile: "config.yaml"
+configfile: "config/config.yaml"
 
 # Run the download script
 # Outputs all files in raw/
@@ -34,7 +35,7 @@ rule unzip:
     input:
         # Helper function to figure out
         # where our .zip files are
-        zipped_downloads(DOWNLOAD)
+        zipped_downloads()
     output:
         # Helper function to indicate
         # where we expand our .zip directories
@@ -43,11 +44,10 @@ rule unzip:
         # a little complex (but this structure
         # is helpful for defining in/out files
         # in later rules)
-        unzipped_downloads(DOWNLOAD)
-    shell:
-        # should be able to just unzip
-        # all files using {input} and {output}
-        # wildcards
+        [directory(x) for x in unzipped_downloads()]
+    script:
+        # easiest to call a script
+        "workflow/scripts/unzip_data.py"
 
 # Ok, now the logic is coming together
 # For rule process, 

@@ -20,7 +20,6 @@ def fill_wcard(endpoint, wcard_dict):
     # Get a list of all the wildcards we need to replace for this endpoint
     wildcards = [wcard for wcard in URL_WILDCARDS if wcard in endpoint]
     # Replace the wildcard with the value stored in a wildcard dictionary
-    # Defined in download_data.py
     for wildcard in wildcards:
         endpoint = endpoint.replace(wildcard, wcard_dict[wildcard])
         
@@ -76,7 +75,7 @@ def get_dir(str_tokens, endpoint):
 
     # Now join the raw directory with the 
     # wildcard name and mid_dirs
-    filepath = join(FR, wcard_name, mid_dirs, filename)
+    filepath = join(FR, mid_dirs, wcard_name, filename)
     
     # Return this directory path and the filename w/ extension
     return filepath
@@ -139,6 +138,15 @@ def dwnld_out_files(files):
         # to get the filename (urls include the file ext)
         # We use the exts dict for this
         filepath = get_dir(str_tokens, endpoint)
+
+        # Replace the wildcard text (i.e. FIPS, STATEABBR)
+        # with the text "unit" so that the download_data
+        # rule only has one wildcard for each
+        # output file
+        out_dict = {'{FIPS}': '{unit}',
+                    '{STATEABBR}': '{unit}',
+                    '{NATION}': '{unit}'}
+        filepath = fill_wcard(filepath, out_dict)
         
         # Add this filepath to our out_list
         out_list.append(filepath)
