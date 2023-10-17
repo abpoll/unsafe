@@ -4,8 +4,6 @@ from util.download import *
 
 configfile: "config.yaml"
 
-# 
-
 # Run the download script
 # Outputs all files in raw/
 # that are specified by the
@@ -15,12 +13,8 @@ configfile: "config.yaml"
 # functions in util/download.py
 # that generate the list of
 # output files for us
-# In the future, it would make sense
-# to distribute downloading across
-# county, state, and national
-# data based on FIPS & STATE_FIPS
-# wildcards and with command line
-# tools like curl
+# TODO In the future, it could make sense
+# to use command line tools like curl
 rule download_data:
     output:
         dwnld_out_files(DOWNLOAD)
@@ -28,3 +22,47 @@ rule download_data:
         "workflow/envs/download.yaml"
     script:
         "workflow/scripts/download_data.py"
+
+# Run the unzip util for all
+# .zip files that were just downloaded
+# Use the directory() to interim
+# as the output
+# TODO need to use wildcards
+# in the directory structure
+# to make this more generalizable
+rule unzip:
+    input:
+        # Helper function to figure out
+        # where our .zip files are
+        zipped_downloads(DOWNLOAD)
+    output:
+        # Helper function to indicate
+        # where we expand our .zip directories
+        # We need to control this programmatically
+        # because the directory structure is
+        # a little complex (but this structure
+        # is helpful for defining in/out files
+        # in later rules)
+        unzipped_downloads(DOWNLOAD)
+    shell:
+        # should be able to just unzip
+        # all files using {input} and {output}
+        # wildcards
+
+# Ok, now the logic is coming together
+# For rule process, 
+# we are processing all the data we just 
+# expanded. Since we know the specific
+# files we need to load, I can 
+# specify -- with wildcards -- exactly
+# the input files for this
+# and exactly the output files for this
+# The logic becomes simpler
+
+# Then there's a generate ensemble rule
+# Again, we know exactly the files
+# that go in and out of this
+
+# Then there's the merge_hazard rule
+
+# Then there's the assess_ensemble rule

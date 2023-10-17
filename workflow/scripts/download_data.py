@@ -48,3 +48,7 @@ and download them
 # from the value of STATE_FIPS and not
 # prespecified in some config file
 download_raw(DOWNLOAD, wcard_dict)
+
+'''
+For files with .zip, we also need to unzip them
+'''

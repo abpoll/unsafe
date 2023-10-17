@@ -22,6 +22,9 @@ CONFIG_FILEP = join(ABS_DIR, 'config', 'config.yaml')
 # raw data directory
 FR = join(ABS_DIR, "data", "raw")
 
+# And external - where our hazard data should be
+FE = join(ABS_DIR, "data", "external")
+
 # Set up interim and results directories as well
 # We already use "FR" for raw, we use "FO" 
 # because you can also think of results
@@ -31,23 +34,18 @@ FO = join(ABS_DIR, "data", "results")
 
 # Directories for exposure, vulnerability (vuln) and
 # administrative reference files
-EXP_DIR_R = join(FR, "exposure")
+EXP_DIR_R = join(FR, "exp")
 VULN_DIR_R = join(FR, "vuln")
 REF_DIR_R = join(FR, "ref")
 # Haz is for depth grids
-HAZ_DIR_R = join(FR, "haz")
+HAZ_DIR_R = join(FE, "haz")
 # Pol is for NFHL
 POL_DIR_R = join(FR, "pol")
 
-# prepare_saving method checks if
-# a directory or filepath is sent
-# If directory, Path(filepath).mkdir() is called
-# with parents=True and exist_ok=True
-# If filepath, go to the parent directory and 
-# repeat the above
-# Can do this recursively
+# Unzip directory 
+UNZIP_DIR_I = join(FI, "unzipped")
+
+# prepare_saving method makes sure
+# the parent directories exist
 def prepare_saving(filepath):
-    if Path(filepath).is_dir():
-        Path(filepath).mkdir(parents=True, exist_ok=True)
-    else:
-        prepare_saving(os.path.abspath(Path(filepath).parents[0]))
+    Path(filepath).parent.mkdir(parents=True, exist_ok=True)

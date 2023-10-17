@@ -11,12 +11,12 @@ from util.const import *
 '''
 Define our utils
 '''
-# The fill_url function
-# For any URL/API endpoint, we want to replace
+# The fill_wcard function
+# For any URL/API endpoint or directory, we want to replace
 # wildcard terms (FIPS, STATE, STATE_ALPHA)
 # with the appropriate value from the FIPS, STATE, or
 # STATE_ALPHA config values
-def fill_url(endpoint, wcard_dict):    
+def fill_wcard(endpoint, wcard_dict):    
     # Get a list of all the wildcards we need to replace for this endpoint
     wildcards = [wcard for wcard in URL_WILDCARDS if wcard in endpoint]
     # Replace the wildcard with the value stored in a wildcard dictionary
@@ -27,10 +27,10 @@ def fill_url(endpoint, wcard_dict):
     return endpoint
 # Example unit test
 # Might be worth it to have a unit test file? 
-test_endpoint = '{STATE_FIPS}_{STATE_ABBR}'
-wcard_dict = {'{STATE_FIPS}': '42',
-              '{STATE_ABBR}': 'PA'}
-assert fill_url(test_endpoint, wcard_dict) == '42_PA'
+test_endpoint = '{STATEFIPS}_{STATEABBR}'
+wcard_dict = {'{STATEFIPS}': '42',
+              '{STATEABBR}': 'PA'}
+assert fill_wcard(test_endpoint, wcard_dict) == '42_PA'
 
 # The get_dir helper function
 # For a list of string tokens, we
@@ -41,12 +41,27 @@ assert fill_url(test_endpoint, wcard_dict) == '42_PA'
 # If the first token is url, we need to use the endpoint
 # that is passed here to get the exact ext we are downloading
 def get_dir(str_tokens, endpoint):
+    # Get wildcard (FIPS, STATE_FIPS, NATION)
+    wcard_type = str_tokens[0]
+    # Replace wcard_type with wcard_name
+    # The idea is that we want the directory
+    # names to be generic, so that it scales
+    # better. In practice this means that
+    # instead of writing out a file to 
+    # a directory like
+    # raw/exp/nsi.pqt
+    # we would do raw/{FIPS}/exp/nsi.pqt
+    # where the script that does downloading
+    # or unzipping, etc has FIPS passed
+    # in as an argument...
+    wcard_name = '{' + wcard_type + '}'
+
     # Get url or api type
-    end_type = str_tokens[0]
+    end_type = str_tokens[1]
     # Get most of the filename
     file_pre = str_tokens[-1]
     # Join the middle tokens as a filepath
-    mid_dirs = '/'.join(str_tokens[1:-1])
+    mid_dirs = '/'.join(str_tokens[2:-1])
 
     # Implement the api vs. url processing
     if end_type == 'api':
@@ -59,8 +74,9 @@ def get_dir(str_tokens, endpoint):
         url_ext = endpoint.split('.')[-1]
         filename = file_pre + '.' + url_ext
 
-    # Now join the raw directory with the mid_dirs
-    filepath = join(FR, mid_dirs, filename)
+    # Now join the raw directory with the 
+    # wildcard name and mid_dirs
+    filepath = join(FR, wcard_name, mid_dirs, filename)
     
     # Return this directory path and the filename w/ extension
     return filepath
@@ -90,17 +106,22 @@ def process_file(file):
     # The endpoint is what we're going to
     # put into a requests call
     endpoint = file[1]
-    # Split name from the 1st indexed token onwards
-    # Like api_exp_nsi
-    str_tokens = name.split('_')[1:]
+    # Split name 
+    # Like county_api_exp_nsi
+    str_tokens = name.split('_')
 
     return str_tokens, endpoint
 
 # The dwnld_out_files function
 # For each URL/API endpoint, we want to return the output
 # version of that file
-# This is the function we need for the download_data
+# This is the function we need for the download_unzip_data
 # rule output
+# TODO this works now, but when we have multiple
+# counties and states this will need to keep
+# the wildcards from the file passed
+# to process_file and add it to the directory
+# structure and/or filename
 def dwnld_out_files(files):
     # For each file that needs to be downloaded
     # Get the filepath
@@ -154,15 +175,17 @@ def download_raw(files, wcard_dict):
         # Get the str_tokens and endpoint from the dataframe row
         str_tokens, endpoint = process_file(file)
         # Get the out filepath
+        # "Clean" it with the wcard_dict
         out_filepath = get_dir(str_tokens, endpoint)
+        out_filepath = fill_wcard(out_filepath, wcard_dict)
         # "Clean" the endpoint with the wcard_dict
-        endpoint = fill_url(endpoint, wcard_dict)
+        endpoint = fill_wcard(endpoint, wcard_dict)
 
         # Make sure we can write out data to this filepath
         prepare_saving(out_filepath)
 
         # Download data with api or url call
-        if str_tokens[0] == 'api':
+        if str_tokens[1] == 'api':
             # If api, call download_api helper function
             download_api(endpoint, out_filepath)
         else:

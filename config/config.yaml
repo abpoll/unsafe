@@ -6,8 +6,9 @@
 # magic. We would want to distribute jobs by 
 # nation, state, county so they could run in parallel
 FIPS: ["42101"]
-STATE_FIPS: ["42"]
-STATE_ABBR: ["PA"]
+STATEFIPS: ["42"]
+STATEABBR: ["PA"]
+NATION: ["US"]
 
 # Below are urls and api endpoints
 # for obtaining all raw data
@@ -40,7 +41,7 @@ STATE_ABBR: ["PA"]
 # downloaded once and from the "external" key
 # (this is theoretical, not relevant to our case study)
 download:
-  county:
+  FIPS:
     api:
       exp: 
         # NSI has an API endpoint
@@ -52,9 +53,9 @@ download:
       # and to generalize this may be better suited to a more dynamic
       # speficiation (i.e. maybe with url prefix and then the {fname}.zip specified
       # more dynamically)
-        haz:
+        pol:
           nfhl: "https://hazards.fema.gov/nfhlv2/output/County/420757_20230701.zip"
-  state:
+  STATEABBR:
     url:
       vuln:
         social:
@@ -62,15 +63,15 @@ download:
           # We have a helper function in a util/ directory that replaces
           # STATE with the STATE key at the top of this config.yml file
           # This is the NOAA SOVI data
-          noaa: "https://coast.noaa.gov/htdata/SocioEconomic/SoVI2010/SoVI_2010_{STATE_ABBR}.zip"
+          noaa: "https://coast.noaa.gov/htdata/SocioEconomic/SoVI2010/SoVI_2010_{STATEABBR}.zip"
       ref:
         # replace STATE_FIPS with st_fips in the download rule
         # We have a helper function in a util/ directory that replaces
         # Tract, block group, and block geospatial boundaries are available at state level
-        tract: "https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{STATE_FIPS}_tract.zip"
-        bg: "https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_{STATE_FIPS}_bg.zip"
-        block: "https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_{STATE_FIPS}_tabblock20.zip"
-  national:
+        tract: "https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{STATEFIPS}_tract.zip"
+        bg: "https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_{STATEFIPS}_bg.zip"
+        block: "https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_{STATEFIPS}_tabblock20.zip"
+  NATION:
     url:
       vuln:
         social:
@@ -88,4 +89,4 @@ api_ext:
   nsi: ".json"
 
 # We need to keep track of which wildcards are used in urls
-url_wildcards: ["{FIPS}", "{STATE_ABBR}", "{STATE_FIPS}"]
+url_wildcards: ["{FIPS}", "{STATEABBR}", "{STATEFIPS}", "{NATION}"]
