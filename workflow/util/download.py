@@ -161,12 +161,14 @@ def download_raw(files, wcard_dict):
         # Make sure we can write out data to this filepath
         prepare_saving(out_filepath)
 
-        # If api, call download_api helper function
-        download_api(endpoint, out_filepath)
-
-        # If url, call download_url helper function
-        # and write file
-        download_url(endpoint, out_filepath)
+        # Download data with api or url call
+        if str_tokens[0] == 'api':
+            # If api, call download_api helper function
+            download_api(endpoint, out_filepath)
+        else:
+            # If url, call download_url helper function
+            # and write file
+            download_url(endpoint, out_filepath)
 
         # TODO log what is being done
         print('Downloaded from: ' + str(endpoint))
