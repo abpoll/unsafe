@@ -58,6 +58,9 @@ rule unzip:
 # the input files for this
 # and exactly the output files for this
 # The logic becomes simpler
+# I think we pass in FIPS, STATEABBR, etc.
+# through params? 
+
 
 # Then there's a generate ensemble rule
 # Again, we know exactly the files
