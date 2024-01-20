@@ -1,6 +1,7 @@
 # Folders to ignore - files may be too large, too many, etc. NOTE: EDIT IF NEEDED.
 data
 references
+Figures
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
