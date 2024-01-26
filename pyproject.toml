@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unsafe"
+version = "0.1"
+dependencies= [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "geopandas>=0.14",
+    "rasterio>=1.3.9"
+]
+authors = [
+  { name="Adam Pollack", email="adampollack25@gmail.com" },
+]
+description = "An UNcertain Structure And Fragility Ensemble framework for flood risk estimation"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+license = {file = "LICENSE"}
+keywords = ["ensemble", "flood risk", "nsi"]

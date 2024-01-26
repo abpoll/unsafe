@@ -1,7 +1,7 @@
 # Folders to ignore - files may be too large, too many, etc. NOTE: EDIT IF NEEDED.
 data
 references
-Figures
+figures
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -53,3 +53,7 @@ Thumbs.db
 # Stuff for local testing #
 ###########################
 .vscode/*
+
+# Avoiding GitHub files #
+#########################
+*.gitkeep

@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 from yaml.loader import SafeLoader
 import requests
+import json
 from util.files import *
 from util.const import *
 
@@ -18,7 +19,7 @@ Define our utils
 # STATE_ALPHA config values
 def fill_wcard(endpoint, wcard_dict):    
     # Get a list of all the wildcards we need to replace for this endpoint
-    wildcards = [wcard for wcard in URL_WILDCARDS if wcard in endpoint]
+    wildcards = [wcard for wcard in wcard_dict.keys() if wcard in endpoint]
     # Replace the wildcard with the value stored in a wildcard dictionary
     for wildcard in wildcards:
         endpoint = endpoint.replace(wildcard, wcard_dict[wildcard])
@@ -160,16 +161,16 @@ def download_url(url, save_path, chunk_size=128):
         for chunk in r.iter_content(chunk_size=chunk_size):
             fd.write(chunk)
 
-# The downlload_api helper function
+# The download_api helper function
 # TODO: it may make sense to have some more
 # configuration data about
 # downloading from different apis
 # so want to split this from the download_url
 # function
 def download_api(url, save_path):
-    r = requests.get(url)
-    with open(save_path, 'wb') as fd:
-        fd.write(r)
+    data = requests.get(url).json()
+    with open(save_path, 'w') as fd:
+        json.dump(data, fd)
 
 # The download_raw function
 # We are going to iterate through our 
