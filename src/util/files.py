@@ -64,15 +64,17 @@ def prepare_saving(filepath):
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
 
 # Helper function for reading in hazard data
-def read_dg(rp, haz_dir):
+# This may have to be modified on a study-by-study
+# basis so long as there is not a standardized
+# way to share flood hazard model output data
+def read_dg(rp):
     # Makes sense we would also have the depth grids stored
     # in directories for different %iles
     # ci5/median/ci95, for example
     # and this could be passed in as an argument
     # and put after HAZ_DIR? Not sure what the other
     # file directory formats will be
-    base_dir = join(HAZ_DIR_UZ, haz_dir, HAZ_DIR_SUB, "RP_" + rp)
-    rp_filep = join(base_dir, HAZ_FILEP.replace('{RP}', rp))
+    rp_filep = join(HAZ_DIR_UZ, HAZ_FILEN.replace('{RP}', rp))
     depth_grid = rasterio.open(rp_filep)
 
     return depth_grid

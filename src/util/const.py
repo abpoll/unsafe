@@ -26,6 +26,12 @@ with open(CONFIG_FILEP) as f:
 # Wildcards for urls
 URL_WILDCARDS = CONFIG['url_wildcards']
 
+# Get the FIPS, STATEFIPS, STATEABBR, NATION values
+FIPS = CONFIG['FIPS']
+STATEFIPS = CONFIG['STATEFIPS']
+STATEABBR = CONFIG['STATEABBR']
+NATION = CONFIG['NATION']
+
 # Get the file extensions for api endpoints
 API_EXT = CONFIG['api_ext']
 
@@ -50,6 +56,13 @@ MTR_TO_FT = 3.28084
 
 # Number of states of the world
 N_SOW = CONFIG['sows']
+
+# Get hazard model variables
+# Get Return Period list
+RET_PERS = CONFIG['RPs']
+HAZ_FILEN = CONFIG['haz_filename']
+# Get CRS for depth grids
+HAZ_CRS = CONFIG['haz_crs']
 
 # Get the files we need downloaded
 # These are specified in the "download" key 

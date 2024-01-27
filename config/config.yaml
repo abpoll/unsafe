@@ -90,6 +90,29 @@ url_wildcards: ["{FIPS}", "{STATEABBR}", "{STATEFIPS}", "{NATION}"]
 # Keep track of NSI CRS
 nsi_crs: "EPSG:4326"
 
+# Keep track of depth grid CRS
+# The flood risk database documentation
+# says NAD83(NSRS2007) but
+# the metadata for what is downloaded
+# for the example does not say
+# which UTM zone. So, I read in
+# a sample file and found the below
+# Name: NAD83(NSRS2007) / UTM zone 18N
+# Axis Info [cartesian]:
+# - [east]: Easting (metre)
+# - [north]: Northing (metre)
+# Area of Use:
+# - undefined
+# Coordinate Operation:
+# - name: UTM zone 18N
+# - method: Transverse Mercator
+# Datum: NAD_1983_NSRS2007
+# - Ellipsoid: GRS 1980
+# - Prime Meridian: Greenwich
+# This corresponds to EPSG: 3725
+# (https://epsg.io/3725)
+haz_crs: "EPSG:3725"
+
 # Dictionary of reference filenames to 
 # what we want them to say
 ref_names:
@@ -105,6 +128,7 @@ ref_id_names:
   tract: "GEOID"
   block: "GEOID20"
   bg: "GEOID"
+  county: "GEOID"
   zcta: "GEOID20"
 
 # Constants for loss estimation
@@ -160,3 +184,8 @@ ffe_dict:
 
 # Number of SOWs
 sows: 10000
+
+# Hazard model configurations
+# Keep track of return periods
+RPs: ["0_2", "01", "02", "10"]
+haz_filename: "Depth_{RP}pct.tif"
