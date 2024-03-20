@@ -26,12 +26,6 @@ with open(CONFIG_FILEP) as f:
 # Wildcards for urls
 URL_WILDCARDS = CONFIG['url_wildcards']
 
-# Get the FIPS, STATEFIPS, STATEABBR, NATION values
-FIPS = CONFIG['FIPS']
-STATEFIPS = CONFIG['STATEFIPS']
-STATEABBR = CONFIG['STATEABBR']
-NATION = CONFIG['NATION']
-
 # Get the file extensions for api endpoints
 API_EXT = CONFIG['api_ext']
 

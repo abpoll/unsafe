@@ -1,20 +1,3 @@
-# In the future, it makes sense to generate the county & state
-# config from a pre-config script that takes in user input
-# for which counties or areas they want to study. Then, 
-# the config.yaml is generated from this user input
-# in the following structure so that snakemake can do its
-# magic. We would want to distribute jobs by 
-# nation, state, county so they could run in parallel
-
-# For the current version of UNSAFE, the config
-# parameters of FIPS, STATEFIPS,
-# STATEABBR, and NATION are not used. These are
-# provided as an example. 
-FIPS: ["42101"]
-STATEFIPS: ["42"]
-STATEABBR: ["PA"]
-NATION: ["US"]
-
 # Below are urls and api endpoints
 # for obtaining all raw data
 # We will organize by county, state
@@ -62,11 +45,7 @@ download:
     url:
       vuln:
         social:
-          # CEJST and low moderate income designations available for the whole country
-          # I'm having trouble downloading lmi from the url endpoint
-          # so just downloaded that separately from
-          # https://www.hudexchange.info/sites/onecpd/assets/File/ACS_2015_lowmod_blockgroup_all.xlsx
-          # and uploaded it the raw/ directory
+          # CEJST and CDC SVI
           cejst: "https://static-data-screeningtool.geoplatform.gov/data-versions/1.0/data/score/downloadable/1.0-communities.csv"
           svi: "https://svi.cdc.gov/Documents/Data/2020/csv/states/SVI_2020_US.csv"
       ref:
