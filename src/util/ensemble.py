@@ -83,7 +83,7 @@ def get_base_df(fips):
     # We also need the fld_zone column processed for using hazus ddfs
     # Get the first character of the flood zone and only retain it
     # if it's a V zone. We are going to use A zone for A and outside
-    # (if any) flood zone depth exposures
+    # (if any) flood zone depth exposuresgi
     ve_zone = np.where(full_df['fld_zone'].str[0] == 'V',
                     'V',
                     'A')
