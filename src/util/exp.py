@@ -227,3 +227,184 @@ def process_nfhl(fips):
                 driver='GPKG')
     # TODO better logging
     print('Wrote NFHL for county')
+
+def get_ref_ids(nsi_gdf, fips):
+    '''
+    Spatially join a gdf representing an administrative
+    reference, like census tract, that we want to link
+    to  individual structures.
+    We project the structures to the CRS of the
+    ref_gdf for the merge. 
+
+    nsi_gdf: GeoDataFrame of structures
+    var_gdf: GeoDataFrame of a reference file, like census tracts
+    '''
+
+    ref_df_list = []
+    for ref_name, ref_id in REF_ID_NAMES_DICT.items():
+        # We don't need to process county if it's in REF_ID_NAMES_DICT
+        # because NSI is already linked to counties, and counties
+        # are our unit of analysis, so we know this
+        if ref_name != 'county':
+            ref_filep = join(REF_DIR_I, fips, ref_name + ".gpkg")
+        
+            # Load in the ref file
+            ref_geo = gpd.read_file(ref_filep)
+        
+            # Limit the geodataframe to our ref id and 'geometry' column
+            keep_col = [ref_id, 'geometry']
+            ref_geo_sub = ref_geo[keep_col]
+        
+            # Limit the NSI to our fd_id and geometry column
+            keep_col_nsi = ['fd_id', 'geometry']
+            nsi_sub = nsi_gdf[keep_col_nsi]
+        
+            # Reproj nsi_sub to the reference crs
+            nsi_reproj = nsi_sub.to_crs(ref_geo.crs)
+        
+            # Do a spatial join
+            nsi_ref = gpd.sjoin(nsi_reproj, ref_geo_sub, predicate='within')
+        
+            # Set index to fd_id and just keep the ref_id
+            # Rename that column to our ref_name + '_id'
+            # Append this to our ref_df_list
+            nsi_ref_f = nsi_ref.set_index('fd_id')[[ref_id]]
+            nsi_ref_f = nsi_ref_f.rename(columns={ref_id: ref_name + '_id'})
+            ref_df_list.append(nsi_ref_f)
+        
+            # Helpful message
+            print('Linked reference to NSI: ' + ref_name + '_id')
+
+    # Can concat and write
+    nsi_refs = pd.concat(ref_df_list, axis=1).reset_index()
+    ref_filep = join(EXP_DIR_I, fips, 'nsi_ref.pqt')
+    prepare_saving(ref_filep)
+    nsi_refs.to_parquet(ref_filep)
+
+def get_spatial_var(nsi_gdf,
+                    var_gdf, 
+                    var_name,
+                    fips,
+                    var_keep_cols=None):
+    '''
+    Spatially join a gdf representing features 
+    that we want to link to  individual structures.
+    We project the structures to the CRS of the
+    var_gdf for the merge. 
+
+    nsi_gdf: GeoDataFrame of structures
+    var_gdf: GeoDataFrame that contains relavent features
+    that we want to link to nsi_gdf
+    var_name: str, the name of the attribute(s) source
+    fips: str, county code
+    var_keep_cols: list, subset of columns to keep after join
+    '''
+
+    nsi_reproj = nsi_gdf.to_crs(var_gdf.crs)
+    nsi_sub = nsi_reproj[['fd_id', 'geometry']]
+
+    # TODO - could accommodate other kinds of
+    # spatial joins, hypothetically
+    nsi_joined = gpd.sjoin(nsi_sub,
+                           var_gdf,
+                           predicate='within')
+
+    # We'll keep fd_id + what is passed in or
+    # all the columns in the var_gdf
+    keep_cols = ['fd_id']
+    if var_keep_cols is not None:
+        keep_cols = keep_cols + var_keep_cols
+    else:
+        keep_cols = keep_cols + var_gdf.columns
+    nsi_out = nsi_joined[keep_cols]
+
+    nsi_out_filep = join(EXP_DIR_I, fips, 'nsi_' + var_name + '.pqt')
+    prepare_saving(nsi_out_filep)
+    nsi_out.to_parquet(nsi_out_filep)
+    print('Wrote out: ' + var_name)
+
+def get_inundations(nsi_gdf, fips):
+    '''
+    Reproject nsi into the hazard CRS and sample the depths
+    from each of the depth grids that are provided in the
+    external hazard directory. 
+
+    nsi_gdf: GeoDataFrame, all structures with Point geometries
+    fips: str, the county code
+    '''
+
+    #TODO if UNSAFE ever departs from relying on the NSI, it might
+    # be helpful to have a more general inundation sampling procedure
+    # for rasterized shapes, too (a point would be a 1 in a 0/1 raster
+    # of structure locations)
+
+    nsi_reproj = nsi_gdf.to_crs(HAZ_CRS)
+
+    # For each depth grid, we will sample from the grid
+    # by way of a list of coordinates from the reprojected
+    # nsi geodataframe (this is the fastest way I know to do it
+    # for point based spatial data)
+    coords = zip(nsi_reproj['geometry'].x, nsi_reproj['geometry'].y)
+    coord_list = [(x, y) for x, y in coords]
+    print('Store NSI coordinates in list')
+
+    # We'll store series of fd_id/depth pairs for each depth grid
+    # in a list and concat this into a df after iterating
+    depth_list = []
+    dg_dict = {}
+
+    # Loop through RPs
+    # TODO it would be better not to always assume you
+    # have depth grids that correspond to return periods. 
+    # Right now this code is probably too specific to the case study,
+    # but is easily adaptable 
+    for rp in RET_PERS:
+        dg = read_dg(rp)
+        print('Read in ' + rp + ' depth grid')
+
+        sampled_depths = [x[0] for x in dg.sample(coord_list)]
+        print('Sampled depths from grid')
+
+        depths = pd.Series(sampled_depths,
+                           index=nsi_reproj['fd_id'],
+                           name=rp)
+
+        depth_list.append(depths)
+        print('Added depths to list\n')
+
+    depth_df = pd.concat(depth_list, axis=1)
+
+    # Replace nodata values with 0
+    depth_df[depth_df == dg.nodata] = 0
+
+    # Retain only structures with some flood exposure
+    depth_df_f = depth_df[depth_df.sum(axis=1) > 0]
+
+    # Multiply by MTR_TO_FT to convert to feet
+    # TODO it would be better if this was only done
+    # based on the need for a unit conversion, which
+    # could potentially be inferred from the CRS
+    # of the hazard data
+    depth_df_f = depth_df_f*MTR_TO_FT
+
+    
+    # TODO right now we process return period based columns
+    # in UNSAFE so we can make these reflect the 
+    # return period, not the annual exceedance probability.
+    # This might not be the best default way to handle
+    # the depth grid column names, and might be more of 
+    # a case-study by case-study thing to handle. 
+    ncol = [str(round(100/float(x.replace('_', '.')))) for x in depth_df_f.columns]
+    depth_df_f.columns = ncol
+
+    # Write out dataframe that links fd_id to depths
+    # with columns corresponding to ret_per (i.e. 500, 100, 50, 10)
+    nsi_depths_out = join(EXP_DIR_I, fips, 'nsi_depths.pqt')
+    prepare_saving(nsi_depths_out)
+    # Round to nearest hundredth foot
+    # Depth-damage functions don't have nearly the precision
+    # to make use of inches differences, but some precision
+    # is needed for subtracting first floor elevation before rounding
+    depth_df_f.round(2).reset_index().to_parquet(nsi_depths_out)
+
+    print('Wrote depth dataframe')
