@@ -40,7 +40,7 @@ assert fill_wcard(test_endpoint, wcard_dict) == '42_PA'
 # and append it to the last string token
 # If the first token is url, we need to use the endpoint
 # that is passed here to get the exact ext we are downloading
-def get_dir(str_tokens, endpoint):
+def get_dir(str_tokens, endpoint, fr, api_ext):
     # Get wildcard (FIPS, STATE_FIPS, NATION)
     wcard_type = str_tokens[0]
     # Replace wcard_type with wcard_name
@@ -68,7 +68,7 @@ def get_dir(str_tokens, endpoint):
         # For example, file_pre will be something like
         # "nsi" which is also our key in the exts dict
         # for the ext we need to use
-        filename = file_pre + API_EXT[file_pre]
+        filename = file_pre + api_ext[file_pre]
     else:
         # Ext is after the last '.' character
         url_ext = endpoint.split('.')[-1]
@@ -76,7 +76,7 @@ def get_dir(str_tokens, endpoint):
 
     # Now join the raw directory with the 
     # wildcard name and mid_dirs
-    filepath = join(FR, mid_dirs, wcard_name, filename)
+    filepath = join(fr, mid_dirs, wcard_name, filename)
     
     # Return this directory path and the filename w/ extension
     return filepath
@@ -179,13 +179,13 @@ def download_api(url, save_path):
 # 2) get the out filepath
 # 3) download the data
 # 4) write it in the out_filepath
-def download_raw(files, wcard_dict):
+def download_raw(files, wcard_dict, fr, api_ext):
     for file in files.itertuples():
         # Get the str_tokens and endpoint from the dataframe row
         str_tokens, endpoint = process_file(file)
         # Get the out filepath
         # "Clean" it with the wcard_dict
-        out_filepath = get_dir(str_tokens, endpoint)
+        out_filepath = get_dir(str_tokens, endpoint, fr, api_ext)
         out_filepath = fill_wcard(out_filepath, wcard_dict)
         # "Clean" the endpoint with the wcard_dict
         endpoint = fill_wcard(endpoint, wcard_dict)

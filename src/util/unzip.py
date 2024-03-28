@@ -12,9 +12,9 @@ from util.const import *
 # raw directory tree and 
 # returns a list of all the paths
 # to .zip directories
-def zipped_downloads():
+def zipped_downloads(fr):
     zip_list = []
-    for path in Path(FR).rglob("*.zip"):
+    for path in Path(fr).rglob("*.zip"):
         # Avoid hidden files and files in directories
         if path.name[0] != ".":
             # Add this path to our list of zip directories
@@ -23,7 +23,7 @@ def zipped_downloads():
 
 # This function gives us all the directory
 # paths for unzipped files
-def unzipped_dirs():
+def unzipped_dirs(fr, unzip_dir):
     # For each *.zip directory
     # we want to get the path relative
     # to raw that the .zip is in
@@ -33,14 +33,14 @@ def unzipped_dirs():
     # and append to a list of output
     # files
     unzip_list = []
-    for path in Path(FR).rglob("*.zip"):
+    for path in Path(fr).rglob("*.zip"):
         # Avoid hidden files and files in directories
         if path.name[0] != ".":
             # Get root for the directory this .zip file is in
-            zip_root = path.relative_to(FR).parents[0]
+            zip_root = path.relative_to(fr).parents[0]
 
             # Get path to interim/zip_root
-            zip_to_path = join(UNZIP_DIR, zip_root)
+            zip_to_path = join(unzip_dir, zip_root)
 
             # Make directory, including parents
             # No need to check if directory exists bc
@@ -66,12 +66,12 @@ def unzipped_downloads():
 # it probably would make sense for this 
 # to work based on state, county, and US 
 # arguments to facilitate distributed processing
-def unzip_raw():
+def unzip_raw(fr, unzip_dir):
     # This gives us a list
     # of files to unzip, and the directories
     # to unzip them to
-    to_unzip = zipped_downloads()
-    unzip_dirs = unzipped_dirs()
+    to_unzip = zipped_downloads(fr)
+    unzip_dirs = unzipped_dirs(fr, unzip_dir)
 
     # We're going to loop through the files we need to unzip
     # and extract them into the appropriate directories

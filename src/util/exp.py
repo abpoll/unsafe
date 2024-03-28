@@ -15,13 +15,13 @@ from util.files import *
 from util.const import *
 
 
-def get_nsi_geo(fips):
+def get_nsi_geo(fips, nsi_crs, exp_dir_r):
     '''
     Finds the raw json data for the county named by 
     the fips argument and returns a geodataframe 
     '''
 
-    nsi_filep = join(EXP_DIR_R, fips, 'nsi.json')
+    nsi_filep = join(exp_dir_r, fips, 'nsi.json')
     with open(nsi_filep, 'r') as fp:
         nsi_full = json.load(fp)
 
@@ -30,12 +30,14 @@ def get_nsi_geo(fips):
     geometry = gpd.points_from_xy(nsi_df['properties.x'],
                                 nsi_df['properties.y'])
     nsi_gdf = gpd.GeoDataFrame(nsi_df, geometry=geometry,
-                            crs=NSI_CRS)
+                               crs=nsi_crs)
 
     drop_cols = ['type', 'geometry.type', 'geometry.coordinates']
     nsi_gdf = nsi_gdf.drop(columns=drop_cols)
     col_updates = [x.replace("properties.", "") for x in nsi_gdf.columns]
     nsi_gdf.columns = col_updates
+
+    print('Prepared geodataframe')
 
     return nsi_gdf
 
@@ -63,7 +65,8 @@ def get_struct_subset(nsi_gdf,
     
     return nsi_sub
 
-def clip_ref_files(clip_gdf, fips):
+def clip_ref_files(clip_gdf, fips,
+                   ref_dir_uz, ref_dir_i, ref_names_dict):
     '''
     Clip reference files in a clip geometry's 
     CRS and write out the resulting files.
@@ -77,7 +80,7 @@ def clip_ref_files(clip_gdf, fips):
 
     # For each .shp file in our unzipped ref directory
     # we are going to reproject & clip, then write out
-    for path in Path(REF_DIR_UZ).rglob('*.shp'):
+    for path in Path(ref_dir_uz).rglob('*.shp'):
         # Read in the file
         ref_shp = gpd.read_file(path)
         
@@ -90,14 +93,14 @@ def clip_ref_files(clip_gdf, fips):
         # the last 4 characters
         ref_name = path.name.split('_')[-1][:-4]
         # Replace the ref name with our ref_name dict values
-        ref_name_out = REF_NAMES_DICT[ref_name]
+        ref_name_out = ref_names_dict[ref_name]
 
         # Reproject and clip our reference shapefile
         ref_reproj = ref_shp.to_crs(clip_gdf.crs)
         ref_clipped = gpd.clip(ref_reproj, clip_gdf)
         
         # Write file
-        ref_out_filep = join(REF_DIR_I, fips, ref_name_out + ".gpkg")
+        ref_out_filep = join(ref_dir_i, fips, ref_name_out + ".gpkg")
         prepare_saving(ref_out_filep)
         ref_clipped.to_file(ref_out_filep,
                             driver='GPKG')
@@ -105,18 +108,19 @@ def clip_ref_files(clip_gdf, fips):
         # Helpful message to track progress
         print("Saved Ref: " + ref_name_out)
 
-def process_national_sovi(sovi_list, fips):
+def process_national_sovi(sovi_list, fips,
+                          vuln_dir_r, ref_dir_i, vuln_dir_i):
     '''
     Process the national social vulnerability data
     that are provided in sovi_list for the provided county.
     sovi_list has the name of the sovi data that need
     to be processed. 
     '''
-    root_dir = join(VULN_DIR_R, 'social', 'US')
+    root_dir = join(vuln_dir_r, 'social', 'US')
 
     # Load relevant spatial data (tract, block group)
-    tract_filep = join(REF_DIR_I, fips, 'tract.gpkg')
-    bg_filep = join(REF_DIR_I, fips, 'bg.gpkg')
+    tract_filep = join(ref_dir_i, fips, 'tract.gpkg')
+    bg_filep = join(ref_dir_i, fips, 'bg.gpkg')
     tract_geo = gpd.read_file(tract_filep)
     bg_geo = gpd.read_file(bg_filep)
 
@@ -141,7 +145,7 @@ def process_national_sovi(sovi_list, fips):
         cejst_f = cejst_f[cejst_f['disadvantaged'] == True].drop(columns='disadvantaged')
 
         # Write file
-        cejst_out_filep = join(VULN_DIR_I, 'social', fips, 'cejst.gpkg')
+        cejst_out_filep = join(vuln_dir_i, 'social', fips, 'cejst.gpkg')
         prepare_saving(cejst_out_filep)
         cejst_f.to_file(cejst_out_filep, driver='GPKG')
 
@@ -172,7 +176,7 @@ def process_national_sovi(sovi_list, fips):
                                                     how='inner')
 
         # Write out file
-        sovi_out_filep = join(VULN_DIR_I, 'social', fips, 'sovi.gpkg')
+        sovi_out_filep = join(vuln_dir_i, 'social', fips, 'sovi.gpkg')
         svi_f.to_file(sovi_out_filep, driver='GPKG')
 
         print('Processed CDC SVI')
@@ -191,16 +195,16 @@ def process_national_sovi(sovi_list, fips):
                                                     how='inner')
 
         # Write file
-        lmi_out_filep = join(VULN_DIR_I, 'social', fips, 'lmi.gpkg')
+        lmi_out_filep = join(vuln_dir_i, 'social', fips, 'lmi.gpkg')
         lmi_f.to_file(lmi_out_filep, driver='GPKG')
         print('Processed low-mod income')
 
-def process_nfhl(fips):
+def process_nfhl(fips, unzip_dir, pol_dir_i):
     '''
     Process the raw NFHL data and write it out
     '''
     # We want S_FLD_HAZ_AR 
-    fld_haz_fp = join(UNZIP_DIR, 'external', 'pol',
+    fld_haz_fp = join(unzip_dir, 'external', 'pol',
                       fips, 'S_FLD_HAZ_AR.shp')
     nfhl = gpd.read_file(fld_haz_fp)
 
@@ -221,14 +225,15 @@ def process_nfhl(fips):
     nfhl_f = nfhl_f.drop(columns=['zone_subty'])
 
     # Write file
-    nfhl_out_filep = join(POL_DIR_I, fips, 'fld_zones.gpkg')
+    nfhl_out_filep = join(pol_dir_i, fips, 'fld_zones.gpkg')
     prepare_saving(nfhl_out_filep)
     nfhl_f.to_file(nfhl_out_filep,
                 driver='GPKG')
     # TODO better logging
     print('Wrote NFHL for county')
 
-def get_ref_ids(nsi_gdf, fips):
+def get_ref_ids(nsi_gdf, fips,
+                ref_id_names_dict, ref_dir_i, exp_dir_i):
     '''
     Spatially join a gdf representing an administrative
     reference, like census tract, that we want to link
@@ -241,12 +246,12 @@ def get_ref_ids(nsi_gdf, fips):
     '''
 
     ref_df_list = []
-    for ref_name, ref_id in REF_ID_NAMES_DICT.items():
+    for ref_name, ref_id in ref_id_names_dict.items():
         # We don't need to process county if it's in REF_ID_NAMES_DICT
         # because NSI is already linked to counties, and counties
         # are our unit of analysis, so we know this
         if ref_name != 'county':
-            ref_filep = join(REF_DIR_I, fips, ref_name + ".gpkg")
+            ref_filep = join(ref_dir_i, fips, ref_name + ".gpkg")
         
             # Load in the ref file
             ref_geo = gpd.read_file(ref_filep)
@@ -277,7 +282,7 @@ def get_ref_ids(nsi_gdf, fips):
 
     # Can concat and write
     nsi_refs = pd.concat(ref_df_list, axis=1).reset_index()
-    ref_filep = join(EXP_DIR_I, fips, 'nsi_ref.pqt')
+    ref_filep = join(exp_dir_i, fips, 'nsi_ref.pqt')
     prepare_saving(ref_filep)
     nsi_refs.to_parquet(ref_filep)
 
@@ -285,6 +290,7 @@ def get_spatial_var(nsi_gdf,
                     var_gdf, 
                     var_name,
                     fips,
+                    exp_dir_i,
                     var_keep_cols=None):
     '''
     Spatially join a gdf representing features 
@@ -318,12 +324,13 @@ def get_spatial_var(nsi_gdf,
         keep_cols = keep_cols + var_gdf.columns
     nsi_out = nsi_joined[keep_cols]
 
-    nsi_out_filep = join(EXP_DIR_I, fips, 'nsi_' + var_name + '.pqt')
+    nsi_out_filep = join(exp_dir_i, fips, 'nsi_' + var_name + '.pqt')
     prepare_saving(nsi_out_filep)
     nsi_out.to_parquet(nsi_out_filep)
     print('Wrote out: ' + var_name)
 
-def get_inundations(nsi_gdf, fips):
+def get_inundations(nsi_gdf, fips, haz_crs, ret_pers, exp_dir_i,
+                    haz_dir_uz, haz_filen):
     '''
     Reproject nsi into the hazard CRS and sample the depths
     from each of the depth grids that are provided in the
@@ -338,7 +345,7 @@ def get_inundations(nsi_gdf, fips):
     # for rasterized shapes, too (a point would be a 1 in a 0/1 raster
     # of structure locations)
 
-    nsi_reproj = nsi_gdf.to_crs(HAZ_CRS)
+    nsi_reproj = nsi_gdf.to_crs(haz_crs)
 
     # For each depth grid, we will sample from the grid
     # by way of a list of coordinates from the reprojected
@@ -358,8 +365,8 @@ def get_inundations(nsi_gdf, fips):
     # have depth grids that correspond to return periods. 
     # Right now this code is probably too specific to the case study,
     # but is easily adaptable 
-    for rp in RET_PERS:
-        dg = read_dg(rp)
+    for rp in ret_pers:
+        dg = read_dg(rp, haz_dir_uz, haz_filen)
         print('Read in ' + rp + ' depth grid')
 
         sampled_depths = [x[0] for x in dg.sample(coord_list)]
@@ -399,7 +406,7 @@ def get_inundations(nsi_gdf, fips):
 
     # Write out dataframe that links fd_id to depths
     # with columns corresponding to ret_per (i.e. 500, 100, 50, 10)
-    nsi_depths_out = join(EXP_DIR_I, fips, 'nsi_depths.pqt')
+    nsi_depths_out = join(exp_dir_i, fips, 'nsi_depths.pqt')
     prepare_saving(nsi_depths_out)
     # Round to nearest hundredth foot
     # Depth-damage functions don't have nearly the precision

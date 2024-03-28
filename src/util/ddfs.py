@@ -59,13 +59,13 @@ def ddf_max_depth_dict(tidy_ddf, dam_col):
     return DDF_DICT
 
 
-def process_naccs():
+def process_naccs(vuln_dir_uz, vuln_dir_i):
     '''
     Default processing and generation of the NACCS DDFs
     '''
     # I feel like hard-coding US until I have a reason not to...
     # Doesn't make sense to get too far ahead of ourselves.
-    ddf_filedir = join(VULN_DIR_UZ, "physical", 'US')
+    ddf_filedir = join(vuln_dir_uz, "physical", 'US')
     naccs = pd.read_csv(join(ddf_filedir, "naccs_ddfs.csv"))
 
     # For NACCS, we have the RES 1 DDFs
@@ -133,7 +133,7 @@ def process_naccs():
                                         'params')
     
     # Main directory
-    ddf_out_dir = join(VULN_DIR_I, 'physical')
+    ddf_out_dir = join(vuln_dir_i, 'physical')
     naccs_out_filep = join(ddf_out_dir, 'naccs_ddfs.pqt')
     naccs_max_filep = join(ddf_out_dir, 'naccs.json')
 
@@ -153,7 +153,7 @@ def process_naccs():
     #TODO improve logging
     print('NACCS DDFs Processed')
 
-def process_hazus(unif_unc=.3):
+def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=.3):
     '''
     Default processing and generation of the HAZUS DDFs
     These are generated with some uniform uncertainty, default
@@ -164,7 +164,7 @@ def process_hazus(unif_unc=.3):
     '''
     # I feel like hard-coding US until I have a reason not to...
     # Doesn't make sense to get too far ahead of ourselves.
-    ddf_filedir = join(VULN_DIR_UZ, "physical", 'US')
+    ddf_filedir = join(vuln_dir_uz, "physical", 'US')
     hazus = pd.read_csv(join(ddf_filedir, "haz_fl_dept.csv"))
 
     # First, preprocessing for hazus ddfs
@@ -352,7 +352,7 @@ def process_hazus(unif_unc=.3):
     hazus_nounc = hazus_f[['ddf_id', 'depth_ft', 'rel_dam']]
 
     # Main directory
-    ddf_out_dir = join(VULN_DIR_I, 'physical')
+    ddf_out_dir = join(vuln_dir_i, 'physical')
 
     # Main ddf files
     hazus_out_filep = join(ddf_out_dir, 'hazus_ddfs.pqt')
@@ -545,3 +545,84 @@ def est_hazus_loss_nounc(bld_types, depths, ddfs, MAX_DICT):
     losses = loss_prep['rel_dam']
 
     return losses
+
+def get_losses(depth_ffe_df, ddf, ddf_types, s_values,
+               vuln_dir_i):
+    '''
+    For a given dataframe of depths relative to first floor elevation
+    and a given depth-damage function library (i.e. hazus), call
+    the corresponding functions to get losses for each scenario/rp
+    in depth_ffe_df. This returns relative losses scaled by
+    the quantitites provided in the s_values serires
+
+    depth_ffe_df: DataFrame, scenarios/return periods with depths relative to ffe
+    linked to each structure
+    ddf: str, the name of the ddf library
+    ddf_types: Series, the occupancy codes that tell us what ddf to use
+    s_values: Series, the value realizations for the structures
+    '''
+    # We need to load ddf data for loss estimation
+    naccs_ddfs = pd.read_parquet(join(vuln_dir_i, 'physical', 'naccs_ddfs.pqt'))
+    hazus_ddfs = pd.read_parquet(join(vuln_dir_i, 'physical', 'hazus_ddfs.pqt'))
+    with open(join(vuln_dir_i, 'physical', 'hazus.json'), 'r') as fp:
+        HAZUS_MAX_DICT = json.load(fp)
+    with open(join(vuln_dir_i, 'physical', 'naccs.json'), 'r') as fp:
+        NACCS_MAX_DICT = json.load(fp)
+    
+    # Get the relative loss based on the ddf provided
+    # and then scale this by the values series
+    loss = {}
+    for d_col in depth_ffe_df.columns:
+        rp = d_col.split('_')[-1]
+        if ddf == 'naccs':
+            rel_loss = est_naccs_loss(ddf_types,
+                                      depth_ffe_df[d_col],
+                                      naccs_ddfs,
+                                      NACCS_MAX_DICT)
+        elif ddf == 'hazus':
+            rel_loss = est_hazus_loss(ddf_types,
+                                      depth_ffe_df[d_col],
+                                      hazus_ddfs,
+                                      HAZUS_MAX_DICT)
+        
+        loss[rp] = rel_loss.values*s_values
+        print('Losses estimated in RP: ' + rp)
+    
+    loss_df = pd.DataFrame.from_dict(loss)
+    loss_df.columns = ['loss_' + x for x in loss_df.columns]
+
+    return loss_df
+
+def get_eal(loss_df, rp_list):
+    '''
+    We use trapezoidal approximation to get the expected annual loss
+    from a dataframe of losses based on design events. rp_list 
+    is sorted from most to least frequent design event
+
+    loss_df: DataFrame, losses in different design events
+    rp_list: list of str, sorted list of the return period from
+    most to least frequent
+    '''
+    p_rp_list = [round(1/int(x), 4) for x in rp_list]
+    loss_list = ['loss_' + str(x) for x in rp_list]
+
+    # Need eal series with the same index as the loss_df
+    eal = pd.Series(index=loss_df.index).fillna(0)
+
+    # We loop through our loss list and apply the 
+    # trapezoidal approximation
+    # We need these to be sorted from most frequent
+    # to least frequent
+    for i in range(len(loss_list) - 1):
+        loss1 = loss_df[loss_list[i]]
+        loss2 = loss_df[loss_list[i+1]]
+        rp1 = p_rp_list[i]
+        rp2 = p_rp_list[i+1]
+        eal += (loss1 + loss2)*(rp1-rp2)/2
+    final = eal + loss_df[loss_list[-1]]*p_rp_list[-1]
+
+    # This is the final trapezoid to add in
+    final_eal = eal + loss_df[loss_list[-1]]*p_rp_list[-1]
+    print('Calculated EAL')
+
+    return final_eal
