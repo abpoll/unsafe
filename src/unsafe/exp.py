@@ -186,7 +186,7 @@ def process_nfhl(fips, unzip_dir, pol_dir_i):
     Process the raw NFHL data and write it out
     '''
     # We want S_FLD_HAZ_AR 
-    fld_haz_fp = join(unzip_dir, 'external', 'pol',
+    fld_haz_fp = join(unzip_dir,
                       fips, 'S_FLD_HAZ_AR.shp')
     nfhl = gpd.read_file(fld_haz_fp)
 
