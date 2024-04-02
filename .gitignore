@@ -3,14 +3,17 @@
 examples/philadelphia_frd/data/*
 # But we will want data for a small reproducible test case
 # That entails the DDFs and the clipped depth grid
-!examples/philadelphia_frd/data/external/
-examples/philadelphia_frd/data/external/*
-!examples/philadelphia_frd/data/external/vuln/
-examples/philadelphia_frd/data/external/vuln/*
-!examples/philadelphia_frd/data/external/vuln/ddfs.zip
-!examples/philadelphia_frd/data/external/haz/
-examples/philadelphia_frd/data/external/haz/*
-!examples/philadelphia_frd/data/external/haz/dg_clipped.zip
+!examples/philadelphia_frd/data/raw/
+examples/philadelphia_frd/data/raw/*
+!examples/philadelphia_frd/data/raw/external/
+examples/philadelphia_frd/data/raw/external/*
+!examples/philadelphia_frd/data/raw/external/vuln/
+examples/philadelphia_frd/data/raw/external/vuln/*
+!examples/philadelphia_frd/data/raw/external/haz/
+examples/philadelphia_frd/data/raw/external/haz/*
+
+!examples/philadelphia_frd/data/raw/external/vuln/ddfs.zip
+!examples/philadelphia_frd/data/raw/external/haz/dg_clipped.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
