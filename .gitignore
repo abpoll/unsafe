@@ -3,6 +3,11 @@
 examples/philadelphia_frd/data/*
 # But we will want data for a small reproducible test case
 # That entails the DDFs and the clipped depth grid
+# I got help from this tool
+# https://theapache64.github.io/git-do-not-ignore/
+# which I found here
+# https://stackoverflow.com/questions/987142/
+# make-gitignore-ignore-everything-except-a-few-files
 !examples/philadelphia_frd/data/raw/
 examples/philadelphia_frd/data/raw/*
 !examples/philadelphia_frd/data/raw/external/
@@ -64,6 +69,8 @@ Thumbs.db
 # Stuff for local testing #
 ###########################
 .vscode/*
+*.egg-info
+dist/
 
 # Avoiding GitHub files #
 #########################
