@@ -4,8 +4,8 @@ import numpy as np
 import os
 import json
 
-from util.const import *
-from util.files import *
+from unsafe.const import *
+from unsafe.files import *
 
 '''
 Helpful functions for processing depth-damage functions

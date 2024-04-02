@@ -6,8 +6,8 @@ import yaml
 from yaml.loader import SafeLoader
 import requests
 import json
-from util.files import *
-from util.const import *
+from unsafe.files import *
+from unsafe.const import *
 
 '''
 Define our utils
@@ -25,12 +25,6 @@ def fill_wcard(endpoint, wcard_dict):
         endpoint = endpoint.replace(wildcard, wcard_dict[wildcard])
         
     return endpoint
-# Example unit test
-# Might be worth it to have a unit test file? 
-test_endpoint = '{STATEFIPS}_{STATEABBR}'
-wcard_dict = {'{STATEFIPS}': '42',
-              '{STATEABBR}': 'PA'}
-assert fill_wcard(test_endpoint, wcard_dict) == '42_PA'
 
 # The get_dir helper function
 # For a list of string tokens, we
@@ -80,18 +74,6 @@ def get_dir(str_tokens, endpoint, fr, api_ext):
     
     # Return this directory path and the filename w/ extension
     return filepath
-
-# Checking the nsi is correct
-# get_dir(['api', 'exp', 'nsi'], 'does not matter')
-
-# Checking something more complex is correct, like
-# a social vulnerability file which is in a nested directory
-# structure
-# get_dir(['url', 'vuln', 'social', 'noaa'],
-#          'https://coast.noaa.gov/htdata/SocioEconomic/SoVI2010/SoVI_2010_{STATE}.zip')
-
-# Did visual checks for these. Could create assert statements
-# based on the path from the project root
 
 # Helper function to process
 # the DOWNLOAD dataframe for use in 

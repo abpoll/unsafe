@@ -11,8 +11,8 @@ from pyproj import CRS
 import os
 os.environ['USE_PYGEOS'] = '0'
 
-from util.files import *
-from util.const import *
+from unsafe.files import *
+from unsafe.const import *
 
 
 def get_nsi_geo(fips, nsi_crs, exp_dir_r):
@@ -180,24 +180,6 @@ def process_national_sovi(sovi_list, fips,
         svi_f.to_file(sovi_out_filep, driver='GPKG')
 
         print('Processed CDC SVI')
-    
-    if 'lmi' in sovi_list:
-        lmi_filename = 'ACS_2015_lowmod_blockgroup_all.xlsx'
-        lmi_filep = join(root_dir, lmi_filename)
-        lmi = pd.read_excel(lmi_filep, engine='openpyxl')
-        # Get GEOID for merge (last 12 characters is the bg id)
-        lmi['GEOID'] = lmi['GEOID'].str[-12:]
-
-        # Retain GEOID and Lowmod_pct
-        keep_cols = ['GEOID', 'Lowmod_pct']
-        lmi_f = bg_geo[['GEOID', 'geometry']].merge(lmi[keep_cols],
-                                                    on='GEOID',
-                                                    how='inner')
-
-        # Write file
-        lmi_out_filep = join(vuln_dir_i, 'social', fips, 'lmi.gpkg')
-        lmi_f.to_file(lmi_out_filep, driver='GPKG')
-        print('Processed low-mod income')
 
 def process_nfhl(fips, unzip_dir, pol_dir_i):
     '''

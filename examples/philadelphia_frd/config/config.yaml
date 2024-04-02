@@ -32,6 +32,13 @@ download:
         # NSI has an API endpoint
         # We call it county by county
         nsi: "https://nsi.sec.usace.army.mil/nsiapi/structures?fips={FIPS}"
+    url:
+        # We use the national flood hazard layer for flood zones
+        # These URLs currently are not in a structured format so I manually input this
+        # after searching on the FEMA map services center
+        pol:
+          nfhl: "https://hazards.fema.gov/nfhlv2/output/County/420757_20230701.zip"
+        
   STATEABBR:
     url:
       ref:
