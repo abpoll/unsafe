@@ -1,12 +1,8 @@
-# Folders to ignore - files may be too large, too many, etc. NOTE: EDIT IF NEEDED.
-# In general, we don't want the data directory
-examples/philadelphia_frd/data
-# But we do want some files for a small reproducible
-# example
-# First, we want the depth-damage functions
-!examples/philadelphia_frd/data/external/vuln/
-# Second, we want the clipped depth grids
-!examples/philadelphia_frd/data/external/haz/dg_clip.zip
+# Folders to ignore
+#  We don't want the data directory
+examples/philadelphia_frd/data/*
+# We also don't want the full dg.zip
+examples/philadelphia_frd/external_data/haz/dg.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -37,7 +33,6 @@ __pycache__/
 *.jar
 *.rar
 *.tar
-*.zip
 
 # Logs and databases #
 ######################
