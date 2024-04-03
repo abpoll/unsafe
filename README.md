@@ -41,7 +41,7 @@ $$
     1                            & otherwise
 \end{dcases}
 $$
-where $NSI\_val_i$ is the structure value provided in the NSI record asi-s. 
+where $NSI\_val_i$ is the structure value provided in the NSI record as-is. 
 
 The NSI represents structure value as depreciated replacement values. These are estimated based on an assumed replacement category and a dollar per square footage estimate for that category. According to the NSI documentation, these are informed by an "analysis of survey data, parcel use types, and other source inputs." There is no documentationon what the replacement categories are, or what the dollar per square footage estimates for these categories are. Values are in 2021 price levels. Dollars per square foot are multiplied by square footage estimates from building footprint data to obtain a structure value estimate. Replacement values are depreciated according to a 1\% per year schedule for the 1st 20 years and it is assumed there is no further depreciation. 
 
