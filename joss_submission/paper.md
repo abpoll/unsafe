@@ -74,11 +74,12 @@ UNSAFE calls the NSI API, downloads the structure inventory, and treats the spat
 #### Structure value
 $$
     {v}_{i}\sim 
-\begin{dcases}
+\begin{cases}
     N(NSI\_val_i, .2*NSI\_val_i) & \text{if $v_{i,j} \geq 1 $} \\
     1                            & otherwise
-\end{dcases}
+\end{cases}
 $$
+
 where $NSI\_val_i$ is the structure value provided in the NSI record as-is. 
 
 The NSI represents structure value as depreciated replacement values. These are estimated based on an assumed replacement category and a dollar per square footage estimate for that category. According to the NSI documentation, these are informed by an "analysis of survey data, parcel use types, and other source inputs." There is no documentationon what the replacement categories are, or what the dollar per square footage estimates for these categories are. Values are in 2021 price levels. Dollars per square foot are multiplied by square footage estimates from building footprint data to obtain a structure value estimate. Replacement values are depreciated according to a 1\% per year schedule for the 1st 20 years and it is assumed there is no further depreciation. 
@@ -109,11 +110,11 @@ The NSI technical documentation states that foundation type is mapped from parce
 
 $$
     {ffe}_{i}= 
-\begin{dcases}
+\begin{cases}
     triangular(0, .5, 1.5),& \text{if $fnd_{i, j}$ = Slab}\\
     triangular(0, .5, 1.5),& \text{if $fnd_{i, j}$ = Crawl Space}\\
     triangular(0, 1.5, 4), & \text{if $fnd_{i, j}$ = Basement}
-\end{dcases}
+\end{cases}
 $$
 
 According to the NSI technical documentation, foundation heights are mapped to each foundation type based on survey estimates from 2021 with each assumed height "closely matching the median value from the survey." Although the distributions that these are drawn from are not shared in the technical documentation, there is some guidance on the distributions from [this repository](https://github.com/HenryGeorgist/go-fathom/blob/master/compute/foundationheights.go), which is the basis for a [Nature Climate Change study from 2022](https://www.nature.com/articles/s41558-021-01265-6) with a co-author from the USACE. 
