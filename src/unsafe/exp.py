@@ -311,7 +311,7 @@ def get_spatial_var(nsi_gdf,
     nsi_out.to_parquet(nsi_out_filep)
     print('Wrote out: ' + var_name)
 
-def get_inundations(nsi_gdf, fips, haz_crs, ret_pers, exp_dir_i,
+def get_inundations(nsi_gdf, haz_crs, ret_pers,
                     haz_dir_uz, haz_filen):
     '''
     Reproject nsi into the hazard CRS and sample the depths
@@ -376,24 +376,6 @@ def get_inundations(nsi_gdf, fips, haz_crs, ret_pers, exp_dir_i,
     # of the hazard data
     depth_df_f = depth_df_f*MTR_TO_FT
 
-    
-    # TODO right now we process return period based columns
-    # in UNSAFE so we can make these reflect the 
-    # return period, not the annual exceedance probability.
-    # This might not be the best default way to handle
-    # the depth grid column names, and might be more of 
-    # a case-study by case-study thing to handle. 
-    ncol = [str(round(100/float(x.replace('_', '.')))) for x in depth_df_f.columns]
-    depth_df_f.columns = ncol
-
-    # Write out dataframe that links fd_id to depths
-    # with columns corresponding to ret_per (i.e. 500, 100, 50, 10)
-    nsi_depths_out = join(exp_dir_i, fips, 'nsi_depths.pqt')
-    prepare_saving(nsi_depths_out)
-    # Round to nearest hundredth foot
-    # Depth-damage functions don't have nearly the precision
-    # to make use of inches differences, but some precision
-    # is needed for subtracting first floor elevation before rounding
-    depth_df_f.round(2).reset_index().to_parquet(nsi_depths_out)
-
-    print('Wrote depth dataframe')
+    # DDFs do not have the precision to handle
+    # any finer rounding than this. 
+    return depth_df_f.round(2)
