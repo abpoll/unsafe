@@ -14,7 +14,7 @@ UNSAFE modifies a property-level risk assessment framework common in academic re
 We provide an extensive technical documentation in the `docs/` subdirectory. The current version is `docs/v01.pdf`
 
 ## Examples
-The expected use case for UNSAFE is provided as a tutorial in the `examples/philadelphia_frd/notebooks/partial_data_example.ipynb` notebook. A more complete example is provided in  `examples/philadelphia_frd/notebooks/full_data_examples.ipynb` and illustrates how accounting for uncertainty in exposure and vulnerability can result in a substantially different representation of expected flood damages than the standard approach. This example is slightly more difficult to follow because it requires you to download data from an external source. In contrast, if you have successfuly installed unsafe into your working environment, you can immediately run the partial data example. 
+The expected use case for UNSAFE is provided as a tutorial in the `examples/philadelphia_frd/notebooks/partial_data_example.ipynb` notebook. This notebook also includes detailed markdown documentation to describe the workflow. All of the data (it's a small example) needed to run this example is included when you install unsafe. Another example is provided in `examples/philadelphia_frd/notebooks/full_data_examples.ipynb`. This example can be reproduced if you download data from an external source. We include it to illustrate how accounting for uncertainty in exposure and vulnerability can result in a substantially different representation of expected flood damages than the standard approach. 
 
 ## Installation
 You can `pip install` the package. 
