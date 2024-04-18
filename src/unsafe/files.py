@@ -3,7 +3,6 @@ import os
 from os.path import join
 from pathlib import Path
 import rasterio
-from unsafe.const import *
 
 '''
 Set up references for file directories that

@@ -1,0 +1,173 @@
+# Below are urls and api endpoints
+# for obtaining all raw data
+# We will organize by county, state
+# and national downloads
+# And then, within each, we will
+# organize by url and api calls
+# Finally, we will include key/val pairs
+# for component type (i.e. haz, exp, vuln)
+# and other identifiers (i.e. social, physical)
+# that are useful for organizational logic
+
+# There are different rules for downloading
+# data from API or URL endpoints, since the former
+# require some parameters whereas the latter
+# point straight to a file to download
+# We will first have keys
+# for api/url 
+# Then we will structure by keys
+# for the data type (i.e. haz/exp)
+# that will define file directories and paths
+# These all need to be nested within 
+# the following keys
+# county, state, national, external
+# we want to download data from
+# largest to smallest scale (i.e. national, state, county)
+# because of their set-type relationships (i.e. many counties in one state
+# and many states in one nation)
+download:
+  FIPS:
+    api:
+      exp: 
+        # NSI has an API endpoint
+        # We call it county by county
+        nsi: "https://nsi.sec.usace.army.mil/nsiapi/structures?fips={FIPS}"
+    url:
+        # We use the national flood hazard layer for flood zones
+        # These URLs currently are not in a structured format so I manually input this
+        # after searching on the FEMA map services center
+        pol:
+          nfhl: "https://hazards.fema.gov/nfhlv2/output/County/420757_20230701.zip"
+        
+  STATEABBR:
+    url:
+      ref:
+        # replace STATE_FIPS with st_fips in the download rule
+        # We have a helper function in a util/ directory that replaces
+        # Tract, block group, and block geospatial boundaries are available at state level
+        tract: "https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{STATEFIPS}_tract.zip"
+        bg: "https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_{STATEFIPS}_bg.zip"
+        block: "https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_{STATEFIPS}_tabblock20.zip"
+  NATION:
+    url:
+      vuln:
+        social:
+          # CEJST and CDC SVI
+          cejst: "https://static-data-screeningtool.geoplatform.gov/data-versions/1.0/data/score/downloadable/1.0-communities.csv"
+          svi: "https://svi.cdc.gov/Documents/Data/2020/csv/states/SVI_2020_US.csv"
+      ref:
+        # County and zip code tabulation area spatial data available for the whole country
+        county: "https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_us_county.zip"
+        zcta: "https://www2.census.gov/geo/tiger/TIGER2022/ZCTA520/tl_2022_us_zcta520.zip"
+# We need to keep track of the format different api data is returned in
+# to write it out
+api_ext:
+  nsi: ".json"
+
+# We need to keep track of which wildcards are used in urls
+url_wildcards: ["{FIPS}", "{STATEABBR}", "{STATEFIPS}", "{NATION}"]
+
+# Keep track of NSI CRS
+nsi_crs: "EPSG:4326"
+
+# Keep track of depth grid CRS
+# The flood risk database documentation
+# says NAD83(NSRS2007) but
+# the metadata for what is downloaded
+# for the example does not say
+# which UTM zone. So, I read in
+# a sample file and found the below
+# Name: NAD83(NSRS2007) / UTM zone 18N
+# Axis Info [cartesian]:
+# - [east]: Easting (metre)
+# - [north]: Northing (metre)
+# Area of Use:
+# - undefined
+# Coordinate Operation:
+# - name: UTM zone 18N
+# - method: Transverse Mercator
+# Datum: NAD_1983_NSRS2007
+# - Ellipsoid: GRS 1980
+# - Prime Meridian: Greenwich
+# This corresponds to EPSG: 3725
+# (https://epsg.io/3725)
+haz_crs: "EPSG:3725"
+
+# Dictionary of reference filenames to 
+# what we want them to say
+ref_names:
+  tract: "tract"
+  tabblock20: "block"
+  bg: "bg"
+  county: "county"
+  zcta520: "zcta"
+
+# Dictionary of ref names to their
+# id column
+ref_id_names:
+  tract: "GEOID"
+  block: "GEOID20"
+  bg: "GEOID"
+  county: "GEOID"
+  zcta: "GEOID20"
+
+# Constants for loss estimation
+# Uncertainty for structure values
+# State of the art automated valuation models
+# are generally mean unbiased
+# This paper https://www.tandfonline.com/doi/full/10.1080/09599916.2020.1807587
+# suggests that a linear model can capture ~ 40% of structure value
+# estimates by w/in 10% of their value, and ~ 83% of structure value estimates
+# by w/in 30% of their value
+# We don't have guidance on what
+# the accuracy of NJ assessments are
+# We also don't have guidance on how well the
+# NSI structure values are calibrated. They are modeled from
+# a non-transparent process and do not come with uncertainty
+# or bias estimates
+# If we use guidance from the Krause et al. paper linked
+# above, we can define a normal distribution that is centered
+# at the predicted value and has a standard deviation
+# equal to predicted value * .2. At the min structure value
+# in our case study, $50K, if you 
+# look at the probability of getting a value within 
+# the predicted value +/- predicted value *.3, it's
+# around .87. So that's a bit better than
+# what Krause gets but it's pretty close. 
+# For pv +/- pv*.1 it's .38. So, that's a little
+# worse than Krause but pretty close. 
+# If we make the scaling factor smaller, 
+# like .15, the latter estimate goes to .495
+# which is over-optimistic. For pv*.3 it's
+# .95 which is way too over-optimistic. 
+# .2 seems ok. What about at the max
+# value? Roughly 440k. For *.1 you get
+# .38 which is pretty good. and for *.3
+# you get .86. So, .2 seems like a good call. 
+coef_var: .2
+
+# Dictionary of foundation types 
+# Triangular distributions for first-floor elevation conditioned
+# on foundation type
+# From this repo: https://github.com/HenryGeorgist/go-fathom/
+# blob/master/compute/foundationheights.go
+# from the wing et al. 2022 paper
+# distributions (min, most likely, max) conditioned on foundation type
+# Tri(0, .5, 1.5|Slab)
+# Tri(0, 1.5, 4|Crawl)
+# Tri(0, 1.5, 4|Basement)
+# Tri(6, 9, 12|Pier)
+# Tri (6, 9, 12|Pile)
+# For this case study, only need 'S', 'C', and 'B'
+ffe_dict:
+  S: [0, .5, 1.5]
+  C: [0, 1.5, 4]
+  B: [0, 1.5, 4]
+
+# Number of SOWs
+sows: 10000
+
+# Hazard model configurations
+# Keep track of return periods
+RPs: ["0_2", "01", "02", "10"]
+haz_filename: "Depth_{RP}pct_clip.tif"
