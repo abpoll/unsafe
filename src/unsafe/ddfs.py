@@ -63,10 +63,7 @@ def process_naccs(vuln_dir_uz, vuln_dir_i):
     '''
     Default processing and generation of the NACCS DDFs
     '''
-    # I feel like hard-coding US until I have a reason not to...
-    # Doesn't make sense to get too far ahead of ourselves.
-    ddf_filedir = join(vuln_dir_uz, "physical", 'US')
-    naccs = pd.read_csv(join(ddf_filedir, "naccs_ddfs.csv"))
+    naccs = pd.read_csv(join(vuln_dir_uz, "naccs_ddfs.csv"))
 
     # For NACCS, we have the RES 1 DDFs
     # NACCS need some preprocessing as well
@@ -162,10 +159,7 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=.3):
     but these can also be used for estimating losses
     without uncertainty
     '''
-    # I feel like hard-coding US until I have a reason not to...
-    # Doesn't make sense to get too far ahead of ourselves.
-    ddf_filedir = join(vuln_dir_uz, "physical", 'US')
-    hazus = pd.read_csv(join(ddf_filedir, "haz_fl_dept.csv"))
+    hazus = pd.read_csv(join(vuln_dir_uz, "haz_fl_dept.csv"))
 
     # First, preprocessing for hazus ddfs
     # For basements, use FIA (MOD.) which does one and two floors by

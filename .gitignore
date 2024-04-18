@@ -20,6 +20,27 @@ examples/philadelphia_frd/data/raw/external/haz/*
 !examples/philadelphia_frd/data/raw/external/vuln/ddfs.zip
 !examples/philadelphia_frd/data/raw/external/haz/dg_clipped.zip
 
+#  That's also true for the phil_frd_partial example
+examples/phil_frd_partial/data/*
+# But we will want data for a small reproducible test case
+# That entails the DDFs and the clipped depth grid
+# I got help from this tool
+# https://theapache64.github.io/git-do-not-ignore/
+# which I found here
+# https://stackoverflow.com/questions/987142/
+# make-gitignore-ignore-everything-except-a-few-files
+!examples/phil_frd_partial/data/raw/
+examples/phil_frd_partial/data/raw/*
+!examples/phil_frd_partial/data/raw/external/
+examples/phil_frd_partial/data/raw/external/*
+!examples/phil_frd_partial/data/raw/external/vuln/
+examples/phil_frd_partial/data/raw/external/vuln/*
+!examples/phil_frd_partial/data/raw/external/haz/
+examples/phil_frd_partial/data/raw/external/haz/*
+
+!examples/phil_frd_partial/data/raw/external/vuln/ddfs.zip
+!examples/phil_frd_partial/data/raw/external/haz/dg_clipped.zip
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
