@@ -3,6 +3,7 @@ from os.path import join
 from pathlib import Path
 import glob
 from zipfile import ZipFile
+import zipfile_deflate64
 from collections import Counter
 from unsafe.files import *
 from unsafe.const import *

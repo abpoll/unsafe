@@ -12,9 +12,11 @@ You can also test out UNSAFE outside of these examples with your own hazard data
 ## Getting ready to run the examples
 To run these examples, you will need to have have [conda](https://docs.conda.io/en/latest/) or [mamba](https://mamba.readthedocs.io/en/latest/) installed. Before you head over to the examples and launch the Jupyter notebooks, you will need to follow these steps:
 
-1) Change your working directory to `examples/` and then run `conda env create -f env/environment.yml` or replace `conda` with `mamba`.
-2) Create an ipykernel for the environment. If you are new to Jupyter Notebooks and/or conda, please see: https://ipython.readthedocs.io/en/stable/install/kernel_install.html#kernels-for-different-environments. We ran `$ python -m ipykernel install --user --name unsafe`
-3) Change your working directory back to the root of the cloned UNSAFE repository and run `pip install -e .` so that the unsafe modules can be imported. 
+1) Change your working directory to `examples/` and then run `conda env create -f env/environment.yml` or replace `conda` with `mamba`. 
+2) Activate the environment.
+3) Create an ipykernel for the environment. If you are new to Jupyter Notebooks and/or conda, please see: https://ipython.readthedocs.io/en/stable/install/kernel_install.html#kernels-for-different-environments. We ran `$ python -m ipykernel install --user --name unsafe`
+4) Change your working directory back to the root of the cloned UNSAFE repository and run `pip install -e .` so that the unsafe modules can be imported. 
+5) Check that the `zipfile-deflate64` package was installed by inspecting the output of `$ conda env list`. If not, run `$ pip install zipfile-deflate64`. This is needed to give UNSAFE more flexibility in unzipping large .zip directories, like the hazard data for the full example. See the Deflate64 project for more information: https://pypi.org/project/zipfile-deflate64/. 
 
 When you go to the Jupyter notebooks to run the examples, make sure you activate the unsafe environment. 
 
