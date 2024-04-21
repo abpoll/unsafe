@@ -27,3 +27,5 @@ These instructions were successfully followed, and the partial data example was 
 These instructions were successfully followed, and the full data example was successfully re-executed, on the following system(s):
 
 1) Ubuntu 22.04.4 LTS (GNU/Linux 5.15.0-102-generic x86_64) machine with mamba version 1.4.2
+
+Feel free to check out the output of the full data example [here](https://html-preview.github.io/?url=https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html) to check your results!
