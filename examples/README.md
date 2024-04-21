@@ -16,10 +16,10 @@ To run these examples, you will need to have have [conda](https://docs.conda.io/
 2) Activate the environment.
 3) Create an ipykernel for the environment. If you are new to Jupyter Notebooks and/or conda, please see: https://ipython.readthedocs.io/en/stable/install/kernel_install.html#kernels-for-different-environments. We ran `$ python -m ipykernel install --user --name unsafe`
 4) Change your working directory back to the root of the cloned UNSAFE repository and run `pip install -e .` so that the unsafe modules can be imported. 
-5) Check that the `zipfile-deflate64` package was installed by inspecting the output of `$ conda env list`. If not, run `$ pip install zipfile-deflate64`. This is needed to give UNSAFE more flexibility in unzipping large .zip directories, like the hazard data for the full example. See the Deflate64 project for more information: https://pypi.org/project/zipfile-deflate64/. 
 
 When you go to the Jupyter notebooks to run the examples, make sure you activate the unsafe environment. 
 
 These instructions were successfully followed, and the examples were successfully re-executed, on the following systems:
 
 1) Ubuntu 22.04.4 LTS (GNU/Linux 5.15.0-102-generic x86_64) machine with mamba version 1.4.2
+2) macOS Sonoma 14.4.1 (Apple M1 Max, 64GB memory) machine with mamba version 1.5.5
