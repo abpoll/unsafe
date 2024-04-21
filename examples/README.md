@@ -19,7 +19,11 @@ To run these examples, you will need to have have [conda](https://docs.conda.io/
 
 When you go to the Jupyter notebooks to run the examples, make sure you activate the unsafe environment. 
 
-These instructions were successfully followed, and the examples were successfully re-executed, on the following systems:
+These instructions were successfully followed, and the partial data example was successfully re-executed, on the following system(s):
 
 1) Ubuntu 22.04.4 LTS (GNU/Linux 5.15.0-102-generic x86_64) machine with mamba version 1.4.2
 2) macOS Sonoma 14.4.1 (Apple M1 Max, 64GB memory) machine with mamba version 1.5.5
+
+These instructions were successfully followed, and the full data example was successfully re-executed, on the following system(s):
+
+1) Ubuntu 22.04.4 LTS (GNU/Linux 5.15.0-102-generic x86_64) machine with mamba version 1.4.2
