@@ -154,6 +154,10 @@ def generate_ensemble(nsi_sub,
     # the foundation type proportions and number of stories
     # with features that vary within a census tract.
     struct_tot = nsi_sub[nsi_sub[STRUCT_REF].isin(base_df[STRUCT_REF])]
+    # Also make sure the foundation type is one of C, S, or B
+    # TODO this should be updated to link more foundation types
+    # and damage functions
+    struct_tot = struct_tot[struct_tot['found_type'].isin(['B', 'C', 'S'])]
 
     # If a variable is in struct_list, we will sample from a distribution
     # If not, we will use the single value from base_df
@@ -224,7 +228,7 @@ def generate_ensemble(nsi_sub,
         # for direct use in our multinomial distribution draw
         # Store params in a list (each row is bg_id and corresponds to
         # its own probabilities of each foundation type)
-        params = found_param.values.round(2)
+        params = found_param.values
         # Then create our dictionary
         fnd_dict = dict(zip(found_param.index, params))
 
@@ -295,20 +299,22 @@ def generate_ensemble(nsi_sub,
                                bld_types + '_' + ens_df['fz_ddf'],
                                bld_types)
 
+    if 'ffe' in struct_list:
+        # We are going to use the fnd_type to draw from the
+        # FFE distribution
+        # Need to use np.stack to get the array of floats
+        tri_params = np.stack(fnd_types.map(ffe_dict))
+        # Can use [:] to access like a matrix and directly input to 
+        # rng.triangular
+        # 0, 1, and 2 are column indices corresponding to left,
+        # mode, and right
+        # We round this to the nearest foot
+        ffes = np.round(rng.triangular(tri_params[:,0],
+                                       tri_params[:,1],
+                                       tri_params[:,2]))
+    else:
+        ffes = ens_df['found_ht']
 
-    # We are going to use the fnd_type to draw from the
-    # FFE distribution
-    # Need to use np.stack to get the array of floats
-    tri_params = np.stack(fnd_types.map(ffe_dict))
-    # Can use [:] to access like a matrix and directly input to 
-    # rng.triangular
-    # 0, 1, and 2 are column indices corresponding to left,
-    # mode, and right
-    # We round this to the nearest foot
-    ffes = np.round(rng.triangular(tri_params[:,0],
-                                   tri_params[:,1],
-                                   tri_params[:,2]))
-    
     print('Generated structure characteristics')
 
     # Before estimating losses, we adjust
@@ -320,20 +326,12 @@ def generate_ensemble(nsi_sub,
     # ddf name since it's easier to keep track when we have
     # multiple ddfs. We will have loss and eal dictionaries
     losses = {}
-    eals = {}
     for ddf in ddf_list:
         print('DDF: ' + ddf)
         ddf_types = pd.Series(hazus_ddf_types) if ddf == 'hazus' else pd.Series(bld_types)
         losses[ddf] = get_losses(depth_ffe_df, ddf, ddf_types, vals, vuln_dir_i)
-        # Define a return period list based on depth_ffe_df.columns
-        # This will be used to determine probabilities of the scenarios
-        # that are passed in and weigh them for expected annual loss.
-        # TODO there needs to be more guidance about how depth_ffe_df
-        # can be defined when design events are not specified
-        rp_list = sorted([int(x.split('_')[-1]) for x in depth_ffe_df.columns])
-        eals[ddf] = get_eal(losses[ddf], rp_list)
 
-    print('Estimated losses and expected annual losses')
+    print('Estimated losses')
     # Now we want a final dataframe of our ensemble. To err on the side of
     # less redundant memory storage, we will only return the characteristics
     # related to losses, the fd_id, the state of world index, and the
@@ -347,15 +345,10 @@ def generate_ensemble(nsi_sub,
     for ddf, df in losses.items():
         df.columns = [ddf + '_' + x for x in df.columns]
         final_losses = pd.concat([final_losses, df], axis=1)
-    final_eals = pd.DataFrame(index=depth_ffe_df.index)
-    for ddf, df in eals.items():
-        df.name = ddf + '_eal'
-        final_eals = pd.concat([final_eals, df], axis=1)
 
     final_ens_df = pd.concat([ens_df[['fd_id']],
                               depth_ffe_df,
                               final_losses,
-                              final_eals,
                               pd.Series(stories, name='stories'),
                               pd.Series(fnd_types, name='fnd_type'),
                               pd.Series(ffes, name='ffe'),

@@ -41,6 +41,11 @@ examples/phil_frd_partial/data/raw/external/haz/*
 !examples/phil_frd_partial/data/raw/external/vuln/ddfs.zip
 !examples/phil_frd_partial/data/raw/external/haz/dg_clipped.zip
 
+# This is a folder with in progress examples
+# and don't want to make this publicly viewable
+# until moved over to examples/
+projects
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

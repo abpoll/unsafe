@@ -170,4 +170,4 @@ sows: 10000
 # Hazard model configurations
 # Keep track of return periods
 RPs: ["0_2", "01", "02", "10"]
-haz_filename: "Depth_{RP}pct.tif"
+haz_filename: "Depth_{rp}pct.tif"

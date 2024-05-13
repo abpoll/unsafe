@@ -312,7 +312,7 @@ def get_spatial_var(nsi_gdf,
     print('Wrote out: ' + var_name)
 
 def get_inundations(nsi_gdf, haz_crs, ret_pers,
-                    haz_dir_uz, haz_filen):
+                    haz_dir_uz, haz_filen, scens=None):
     '''
     Reproject nsi into the hazard CRS and sample the depths
     from each of the depth grids that are provided in the
@@ -347,19 +347,36 @@ def get_inundations(nsi_gdf, haz_crs, ret_pers,
     # have depth grids that correspond to return periods. 
     # Right now this code is probably too specific to the case study,
     # but is easily adaptable 
-    for rp in ret_pers:
-        dg = read_dg(rp, haz_dir_uz, haz_filen)
-        print('Read in ' + rp + ' depth grid')
+    if scens is not None:
+        for scen in scens:
+            for rp in ret_pers:
+                dg = read_dg(rp, haz_dir_uz, haz_filen, scen)
+                print('Read in ' + rp + ' depth grid')
 
-        sampled_depths = [x[0] for x in dg.sample(coord_list)]
-        print('Sampled depths from grid')
+                sampled_depths = [x[0] for x in dg.sample(coord_list)]
+                print('Sampled depths from grid')
 
-        depths = pd.Series(sampled_depths,
-                           index=nsi_reproj['fd_id'],
-                           name=rp)
+                name = scen + "_" + rp if len(scens) > 1 else rp
+                depths = pd.Series(sampled_depths,
+                                index=nsi_reproj['fd_id'],
+                                name=name)
 
-        depth_list.append(depths)
-        print('Added depths to list\n')
+                depth_list.append(depths)
+                print('Added depths to list\n')
+    else:
+        for rp in ret_pers:
+            dg = read_dg(rp, haz_dir_uz, haz_filen)
+            print('Read in ' + rp + ' depth grid')
+
+            sampled_depths = [x[0] for x in dg.sample(coord_list)]
+            print('Sampled depths from grid')
+
+            depths = pd.Series(sampled_depths,
+                            index=nsi_reproj['fd_id'],
+                            name=rp)
+
+            depth_list.append(depths)
+            print('Added depths to list\n')
 
     depth_df = pd.concat(depth_list, axis=1)
 

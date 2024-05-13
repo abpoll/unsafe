@@ -567,7 +567,7 @@ def get_losses(depth_ffe_df, ddf, ddf_types, s_values,
     # and then scale this by the values series
     loss = {}
     for d_col in depth_ffe_df.columns:
-        rp = d_col.split('_')[-1]
+        scen_name = '_'.join(d_col.split('_')[1:])
         if ddf == 'naccs':
             rel_loss = est_naccs_loss(ddf_types,
                                       depth_ffe_df[d_col],
@@ -579,8 +579,8 @@ def get_losses(depth_ffe_df, ddf, ddf_types, s_values,
                                       hazus_ddfs,
                                       HAZUS_MAX_DICT)
         
-        loss[rp] = rel_loss.values*s_values
-        print('Losses estimated in RP: ' + rp)
+        loss[scen_name] = rel_loss.values*s_values
+        print('Losses estimated: ' + scen_name)
     
     loss_df = pd.DataFrame.from_dict(loss)
     loss_df.columns = ['loss_' + x for x in loss_df.columns]
