@@ -8,8 +8,9 @@ from collections import Counter
 from unsafe.files import *
 from unsafe.const import *
 
-# This function searches through our 
-# raw directory tree and 
+
+# This function searches through our
+# raw directory tree and
 # returns a list of all the paths
 # to .zip directories
 def zipped_downloads(fr):
@@ -21,6 +22,7 @@ def zipped_downloads(fr):
             zip_list.append(str(path))
     return zip_list
 
+
 # This function gives us all the directory
 # paths for unzipped files
 def unzipped_dirs(fr, unzip_dir):
@@ -29,7 +31,7 @@ def unzipped_dirs(fr, unzip_dir):
     # to raw that the .zip is in
     # We can use this relative path
     # and append it to raw/unzipped/
-    # Make this directory 
+    # Make this directory
     # and append to a list of output
     # files
     unzip_list = []
@@ -51,7 +53,8 @@ def unzipped_dirs(fr, unzip_dir):
             unzip_list.append(zip_to_path)
     return unzip_list
 
-# This function gives us our 
+
+# This function gives us our
 # structured directory path -
 # a unique set of these
 def unzipped_downloads():
@@ -62,9 +65,9 @@ def unzipped_downloads():
 
 # This function calls the other helpfer functions to unzip
 # all of the external and raw data in our
-# directory. In a many county setting, 
-# it probably would make sense for this 
-# to work based on state, county, and US 
+# directory. In a many county setting,
+# it probably would make sense for this
+# to work based on state, county, and US
 # arguments to facilitate distributed processing
 def unzip_raw(fr, unzip_dir):
     # This gives us a list
@@ -94,11 +97,11 @@ def unzip_raw(fr, unzip_dir):
 
         out_filedir = unzip_dirs[i]
         if unzip_dirs[i] in need_subdir:
-            subdir = filepath.split('/')[-1][:-4]
+            subdir = filepath.split("/")[-1][:-4]
             out_filedir = join(out_filedir, subdir)
-            
+
         with ZipFile(path, "r") as zip_ref:
             zip_ref.extractall(out_filedir)
-        
-        #TODO helpful log message
-        print('Unzipped: ' + str(path.name).split('.')[0])
+
+        # TODO helpful log message
+        print("Unzipped: " + str(path.name).split(".")[0])

@@ -5,14 +5,17 @@ from os.path import join
 from pathlib import Path
 import rasterio
 
-'''
+"""
 Set up references for file directories that
 are used throughout the workflow
-'''
+"""
+
+
 # prepare_saving method makes sure
 # the parent directories exist
 def prepare_saving(filepath):
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+
 
 # Helper function for reading in hazard data
 # This may have to be modified on a study-by-study
@@ -33,7 +36,7 @@ def read_dg(rp, haz_dir_uz, haz_filen, scen=None):
     else:
         rep = {"{rp}": rp}
     # use these three lines to do the replacement
-    rep = dict((re.escape(k), v) for k, v in rep.items()) 
+    rep = dict((re.escape(k), v) for k, v in rep.items())
     pattern = re.compile("|".join(rep.keys()))
     haz_file = pattern.sub(lambda m: rep[re.escape(m.group(0))], haz_filen)
 
