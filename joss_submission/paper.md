@@ -10,7 +10,7 @@ authors:
   - name: Adam Pollack
     email: adam.b.pollack@dartmouth.edu
     corresponding: true
-    orcid: 0000-0002-7304-3883
+    orcid: 0000-0001-6642-0591
     affiliation: 1
   - name: James Doss-Gollin
     orcid: 0000-0002-3428-2224
