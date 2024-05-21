@@ -6,8 +6,7 @@ It also includes example code that demonstrates a workflow for using **UNSAFE** 
 ## Statement of need
 
 Flooding is a frequent, widespread, and damaging natural hazard in the United States.
-Property-level economic flood risk estimates are increasingly used in research and practice to help inform management practices and policies.
-Economic flood risk is estimated as a function of hazard (_i.e._, the features of a flood over space and time), exposure (_i.e._, the assets that experience inundation from a flood), and vulnerability (_i.e._, the susceptibility of exposed assets to damage for a set of flood features).
+Property-level economic flood risk estimates are increasingly used in research and practice to help inform management practices and policies. xEconomic flood risk is estimated as a function of hazard (_i.e._, the features of a flood over space and time), exposure (_i.e._, the assets that experience inundation from a flood), and vulnerability (_i.e._, the susceptibility of exposed assets to damage for a set of flood features).
 
 It is common for property-level economic flood risk assessments to overlook uncertainty in these inputs.
 When uncertainty is incorporated, it is more common to account for uncertainty in flood hazard than in exposure or vulnerability.
