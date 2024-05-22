@@ -8,8 +8,8 @@ tags:
   - Python
 authors:
   - name: Adam Pollack
-    email: adam.b.pollack@dartmouth.edu
     corresponding: true
+    email: adam.b.pollack@dartmouth.edu
     orcid: 0000-0001-6642-0591
     affiliation: 1
   - name: James Doss-Gollin
