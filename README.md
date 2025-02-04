@@ -58,3 +58,10 @@ Feel free to engage with the development team on GitHub - we're excited to colla
 
 To get started, simply clone the package and run `pip install -e .` from the project root to set up your local environment for testing and development.
 We look forward to working with you to make **UNSAFE** even better!
+
+### Contributions to the initial v0.1 of UNSAFE
+
+* AP: conceptualization, software development, software testing, project management, JOSS paper original draft, JOSS paper review and editing
+* JDG: conceptualization, software testing, methodology, JOSS paper review and editing
+* VS: conceptualization, methodology, JOSS paper review and editing
+* KK: conceptualization, methodology, JOSS paper review and editing
