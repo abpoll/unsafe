@@ -53,7 +53,7 @@ download:
       vuln:
         social:
           # CEJST and CDC SVI
-          cejst: "https://static-data-screeningtool.geoplatform.gov/data-versions/1.0/data/score/downloadable/1.0-communities.csv"
+          cejst: "https://dblew8dgr6ajz.cloudfront.net/data-versions/2.0/data/score/downloadable/2.0-communities.csv"
       ref:
         # County and zip code tabulation area spatial data available for the whole country
         county: "https://web.archive.org/web/20240422040051/https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_us_county.zip"
