@@ -12,7 +12,7 @@
 - [Installation](#installation)
 - [Examples](#examples)
 - [Documentation](#documentation)
-- [Contributiong](#contributions)
+- [Contributions](#contributions)
 - [License](#license)
 - [Citation](#citation)
 - [Acknowledgements](#acknowledgements)
