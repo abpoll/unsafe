@@ -49,7 +49,7 @@ def ddf_max_depth_dict(tidy_ddf, dam_col):
     # to take the param values of the max depth DDF
     # First, we groupby bld type for naccs and get max depth for
     # each bld type
-    max_ddf_depths = tidy_ddf.groupby(["ddf_id"])["depth_ft"].idxmax()
+    max_ddf_depths = tidy_ddf.groupby(["ddf_type"])["depth_ft"].idxmax()
     # Locate these rows in the dataframe for the ddfs
     max_d_params = tidy_ddf.iloc[max_ddf_depths]
     # Can create a dict of bld_type to params
@@ -57,7 +57,7 @@ def ddf_max_depth_dict(tidy_ddf, dam_col):
     # where a depth value is not null, but the params value is
     # We will just use this dict to fill the param values
     # with those corresponding to the max depth for that same bld type
-    DDF_DICT = dict(zip(max_d_params["ddf_id"], max_d_params[dam_col]))
+    DDF_DICT = dict(zip(max_d_params["ddf_type"], max_d_params[dam_col]))
 
     return DDF_DICT
 
@@ -73,38 +73,34 @@ def process_naccs(vuln_dir_uz, vuln_dir_i):
     # First, subset to the relevant Occupancy types
     # We want to end up with ddf ids 1swb, etc.
     # don't need to keep the RES1- part for this case study
-    naccs["res_type"] = naccs["Occupancy"].str.split("-").str[0]
-    naccs["bld_type"] = naccs["Occupancy"].str.split("-").str[1]
-    occ_types = ["1SWB", "2SWB", "1SNB", "2SNB"]
-    naccs_res = naccs.loc[
-        (naccs["bld_type"].isin(occ_types)) & (naccs["res_type"] == "RES1")
-    ]
+    naccs["occ_type"] = naccs["Occupancy"].str.split("-").str[0]
+    naccs["ddf_id"] = naccs["Occupancy"].str.split("-").str[1]
 
     # Next, drop columns we don't need
-    drop_cols = ["Description", "Source", "Occupancy", "res_type"]
-    naccs_res = naccs_res.drop(columns=drop_cols)
+    drop_cols = ["Description", "Source", "Occupancy"]
+    naccs = naccs.drop(columns=drop_cols)
 
     # Rename DamageCategory
-    naccs_res = naccs_res.rename(
-        columns={"DamageCategory": "dam_cat", "bld_type": "ddf_id"}
+    naccs = naccs.rename(
+        columns={"DamageCategory": "dam_cat"}
     )
 
     # Now get the melted dataframe
-    idvars = ["ddf_id", "dam_cat"]
-    naccs_melt = tidy_ddfs(naccs_res, idvars)
+    idvars = ["ddf_id", "occ_type", "dam_cat"]
+    naccs_melt = tidy_ddfs(naccs, idvars)
 
     # Drop columns we don't need
     drop_cols = ["depth_str", "pct_dam"]
     naccs_f = naccs_melt.drop(columns=drop_cols)
 
     # We want to pivot the dataframe so that Min/ML/Max are our columns
-    naccs_piv = naccs_f.pivot(index=["ddf_id", "depth_ft"], columns="dam_cat")[
+    naccs_piv = naccs_f.pivot(index=["ddf_id", "occ_type", "depth_ft"], columns="dam_cat")[
         "rel_dam"
     ].reset_index()
 
     # We do the interpolation again
     df_int_list = []
-    for ddf_id, df in naccs_piv.groupby("ddf_id"):
+    for ddf_type, df in naccs_piv.groupby(["ddf_id", "occ_type"]):
         # This creates the duplicate rows
         ddf_int = df.loc[np.repeat(df.index, 10)].reset_index(drop=True)
         # Now we have to make them nulls by finding
@@ -113,8 +109,8 @@ def process_naccs(vuln_dir_uz, vuln_dir_i):
         ddf_int.loc[ddf_int.index % 10 != 0, float_cols] = np.nan
         # Now we interpolate (again, on floats)
         ddf_int_floats = ddf_int[float_cols].interpolate().round(2)
-        # Add in our ddf id col
-        ddf_int_floats["ddf_id"] = ddf_id
+        # Add in our ddf type col
+        ddf_int_floats["ddf_type"] = '_'.join(ddf_type)
         # Drop duplicate rows (this happens for the max depth values)
         ddf_int = ddf_int_floats.drop_duplicates()
         # And append
