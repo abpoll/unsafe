@@ -249,7 +249,7 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
     # Easier to have the flood zone as a capital letter
     # It's lower case because of earlier code to do
     # some processing
-    hazus_melt = hazus_melt.assign(ddf_id=pd.Series(ddf_id).str.upper())
+    hazus_melt = hazus_melt.assign(ddf_type=pd.Series(ddf_id).str.upper())
     # Drop columns
     hazus = hazus_melt.drop(columns=dropcols)
 
@@ -262,12 +262,12 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
     # makes the rigorous case that the approach is not needed once
     # you use DDFs w/ uncertainty bounds
 
-    # To do this interpolation, we loop through each ddf_id,
+    # To do this interpolation, we loop through each ddf_type,
     # and then we will just sample 10 points and create nan rows
-    # (besides ddf_id). Then we interpolate, store in a list
+    # (besides ddf_type). Then we interpolate, store in a list
     # and concat at the end
     df_int_list = []
-    for ddf_id, df in hazus.groupby("ddf_id"):
+    for ddf_type, df in hazus.groupby("ddf_type"):
         # This creates the duplicate rows
         ddf_int = df.loc[np.repeat(df.index, 10)].reset_index(drop=True)
         # Now we have to make them nulls by finding
@@ -275,8 +275,8 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
         ddf_int.loc[ddf_int.index % 10 != 0, ["depth_ft", "rel_dam"]] = np.nan
         # Now we interpolate (just on floats)
         ddf_int_floats = ddf_int[["depth_ft", "rel_dam"]].interpolate()
-        # And add on the ddf_id column back
-        ddf_int_floats["ddf_id"] = ddf_id
+        # And add on the ddf_type column back
+        ddf_int_floats["ddf_type"] = ddf_type
         # Drop duplicate rows (this happens for the max depth values)
         ddf_int = ddf_int_floats.drop_duplicates()
         # And append
@@ -300,8 +300,8 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
     # Get param cols
     uni_params = ["low", "high"]
 
-    # Get df of ddf_id, depth_ft, rel_dam
-    hazus_f = hazus_ddfs[["ddf_id", "depth_ft", "rel_dam"]]
+    # Get df of ddf_type, depth_ft, rel_dam
+    hazus_f = hazus_ddfs[["ddf_type", "depth_ft", "rel_dam"]]
     # Now store params as a list
     hazus_f = hazus_f.assign(params=hazus_ddfs[uni_params].values.tolist())
 
@@ -326,10 +326,10 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
     # the upper bound
     # This is why it's very helpful to have the params stored as
     # a list, because now we can get unique key/value pairs
-    # for the ddf_id and the params
+    # for the ddf_type and the params
     # We need two dicts for HAZUS
     # One is with the params list
-    # One is just ddf_id to rel_dam (for benchmark loss calculations
+    # One is just ddf_type to rel_dam (for benchmark loss calculations
     # when uncertainty is not considered)
 
     # We can call our helper function to get our dictionaries
@@ -338,8 +338,8 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
 
     # We need one hazus file with params for
     # uncertainty and one w/ just rel_dam
-    hazus_unc = hazus_f[["ddf_id", "depth_ft", "params"]]
-    hazus_nounc = hazus_f[["ddf_id", "depth_ft", "rel_dam"]]
+    hazus_unc = hazus_f[["ddf_type", "depth_ft", "params"]]
+    hazus_nounc = hazus_f[["ddf_type", "depth_ft", "rel_dam"]]
 
     # Main directory
     ddf_out_dir = join(vuln_dir_i, "physical")
@@ -380,7 +380,7 @@ def est_naccs_loss(bld_types, depths, ddfs, MAX_DICT):
     # Combine building types and depths on index
     bld_depths = pd.concat([bld_types, pd.Series(depths)], axis=1)
     # Rename columns to correspond to each series
-    bld_depths.columns = ["ddf_id", "depth_ft"]
+    bld_depths.columns = ["ddf_type", "depth_ft"]
     # Merge bld_type/depths with the ddfs to get params linked up
     # Need to create columns for the merge
     # We use the number 100, since this is our floating point precision
@@ -391,7 +391,7 @@ def est_naccs_loss(bld_types, depths, ddfs, MAX_DICT):
     ddfs["merge"] = np.round(ddfs["depth_ft"] * 100).astype(int)
     # Drop column 'depth_ft' from ddfs for the merge
     loss_prep = bld_depths.merge(
-        ddfs.drop(columns="depth_ft"), on=["ddf_id", "merge"], how="left"
+        ddfs.drop(columns="depth_ft"), on=["ddf_type", "merge"], how="left"
     )
     # Drop the merge column
     loss_prep = loss_prep.drop(columns="merge")
@@ -403,7 +403,7 @@ def est_naccs_loss(bld_types, depths, ddfs, MAX_DICT):
     # We are going to use the max_d_dict from preparing the DDFs to
     # assign the params from the max depth for the same bld_type
     missing_rows = (loss_mask) & (loss_prep["params"].isnull())
-    missing_params = loss_prep.loc[missing_rows]["ddf_id"].map(MAX_DICT)
+    missing_params = loss_prep.loc[missing_rows]["ddf_type"].map(MAX_DICT)
 
     # Replace the entries with missing params but positive depths
     loss_prep.loc[missing_rows, "params"] = missing_params
@@ -450,7 +450,7 @@ def est_hazus_loss(hazus_ddf_types, depths, ddfs, MAX_DICT):
     # Combine building types and depths on index
     bld_depths = pd.concat([hazus_ddf_types, pd.Series(depths)], axis=1)
     # Rename columns to correspond to each series
-    bld_depths.columns = ["ddf_id", "depth_ft"]
+    bld_depths.columns = ["ddf_type", "depth_ft"]
     # Merge bld_type/depths with the ddfs to get params linked up
     # Need to create columns for the merge
     # We use the number 10, since this is our floating point precision
@@ -460,7 +460,7 @@ def est_hazus_loss(hazus_ddf_types, depths, ddfs, MAX_DICT):
     ddfs["merge"] = np.round(ddfs["depth_ft"] * 10).astype(int)
     # Drop column 'depth_ft' from ddfs for the merge
     loss_prep = bld_depths.merge(
-        ddfs.drop(columns="depth_ft"), on=["ddf_id", "merge"], how="left"
+        ddfs.drop(columns="depth_ft"), on=["ddf_type", "merge"], how="left"
     )
     # Drop the merge column
     loss_prep = loss_prep.drop(columns="merge")
@@ -472,7 +472,7 @@ def est_hazus_loss(hazus_ddf_types, depths, ddfs, MAX_DICT):
     # We are going to use the max_d_dict from preparing the DDFs to
     # assign the params from the max depth for the same bld_type
     missing_rows = (loss_mask) & (loss_prep["params"].isnull())
-    missing_params = loss_prep.loc[missing_rows]["ddf_id"].map(MAX_DICT)
+    missing_params = loss_prep.loc[missing_rows]["ddf_type"].map(MAX_DICT)
     # Replace the entries with missing params but positive depths
     loss_prep.loc[missing_rows, "params"] = missing_params
     # Now we can estimate losses for all notnull() depth_ft rows
@@ -513,7 +513,7 @@ def est_hazus_loss_nounc(bld_types, depths, ddfs, MAX_DICT):
     # Combine building types and depths on index
     bld_depths = pd.concat([bld_types, pd.Series(depths)], axis=1)
     # Rename columns to correspond to each series
-    bld_depths.columns = ["ddf_id", "depth_ft"]
+    bld_depths.columns = ["ddf_type", "depth_ft"]
     # Merge bld_type/depths with the ddfs to get params linked up
     # Need to create columns for the merge
     # We use the number 10, since this is our floating point precision
@@ -523,7 +523,7 @@ def est_hazus_loss_nounc(bld_types, depths, ddfs, MAX_DICT):
     ddfs["merge"] = np.round(ddfs["depth_ft"] * 10).astype(int)
     # Drop column 'depth_ft' from ddfs for the merge
     loss_prep = bld_depths.merge(
-        ddfs.drop(columns="depth_ft"), on=["ddf_id", "merge"], how="left"
+        ddfs.drop(columns="depth_ft"), on=["ddf_type", "merge"], how="left"
     )
     # Drop the merge column
     loss_prep = loss_prep.drop(columns="merge")
@@ -534,7 +534,7 @@ def est_hazus_loss_nounc(bld_types, depths, ddfs, MAX_DICT):
     # There could be some depths greater than the support from DDFs
     # Fill these in based on the HAZUS_DEF_MAX_DICT
     missing_rows = (loss_mask) & (loss_prep["rel_dam"].isnull())
-    missing_dams = loss_prep.loc[missing_rows]["ddf_id"].map(MAX_DICT)
+    missing_dams = loss_prep.loc[missing_rows]["ddf_type"].map(MAX_DICT)
     # Replace the entries with missing params but positive depths
     loss_prep.loc[missing_rows, "rel_dam"] = missing_dams
 
