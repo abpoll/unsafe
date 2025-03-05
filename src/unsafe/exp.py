@@ -78,15 +78,56 @@ def get_struct_subset(nsi_gdf, filter=None, occtype_list=None):
 
 def clip_ref_files(clip_gdf, fips, ref_dir_uz, ref_dir_i, ref_names_dict):
     """
-    Clip reference files in a clip geometry's
-    CRS and write out the resulting files.
+    Clip reference shapefiles to a specified geometry and save the results.
+    
+    This function processes geographic reference files (census tracts, block groups, etc.)
+    by clipping them to a specified boundary (typically a county or study area) and 
+    saving the clipped files with standardized names to the interim directory.
+    
+    Parameters
+    ----------
+    clip_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing the geometry to clip the reference files to.
+        Typically represents a county or study area boundary.
+    
+    fips : str
+        FIPS code for the county or area being processed. Used to organize
+        output files in the directory structure.
+    
+    ref_dir_uz : str or Path
+        Path to the directory containing unzipped reference shapefiles.
+        Expected structure is ref_dir_uz/[NATION]/[TYPE]/tl_YYYY_[FIPS]_[TYPE].shp
+        Example: "data/raw/unzipped/ref/US/county/tl_2022_us_county.shp"
+    
+    ref_dir_i : str or Path
+        Path to the interim directory where clipped files will be saved.
+        Files will be saved as ref_dir_i/[FIPS]/[STANDARDIZED_NAME].gpkg
+    
+    ref_names_dict : dict
+        Dictionary mapping raw data file names to standardized names.
+        Example: {'tract': 'tracts', 'tabblock20bg': 'block', 'zcta520': 'zip_codes'}
+    
+    Returns
+    -------
+    None
+        Results are saved to disk at the specified locations
+    
+    Notes
+    -----
+    - All reference files are reprojected to match the CRS of clip_gdf before clipping
+    - Output files are saved in GeoPackage (.gpkg) format for better performance
+    - The function processes all .shp files found recursively in ref_dir_uz
     """
+    print("Processing reference files...")
     # TODO it could be helpful to have the fips code
     # also instruct us about where to read unzipped
-    # files from. Innocuous for now, but not scalable
-    # to just look at REF_DIR_UZ. Eventually, that
-    # will also have to structure files by
-    # fips, state, etc.
+    # files from, at least the state fips argument. 
+    # Innocuous for now, but not scalable
+    # to just look at REF_DIR_UZ.
+
+    # Find all shapefiles in the reference directory
+    shapefiles = list(Path(ref_dir_uz).rglob("*.shp"))
+    print(f"Found {len(shapefiles)} shapefiles to process")
 
     # For each .shp file in our unzipped ref directory
     # we are going to reproject & clip, then write out
