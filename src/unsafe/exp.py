@@ -9,10 +9,13 @@ from rasterio.warp import calculate_default_transform, reproject, Resampling
 import rasterio.mask
 from pyproj import CRS
 import os
+from os.path import join
+import warnings
 
 os.environ["USE_PYGEOS"] = "0"
-from unsafe.files import *
-from unsafe.const import *
+import unsafe.download as undown
+import unsafe.files as unfile
+import unsafe.const as uncnst
 
 
 def get_nsi_geo(fips, nsi_crs, exp_dir_r):
@@ -76,7 +79,8 @@ def get_struct_subset(nsi_gdf, filter=None, occtype_list=None):
     return nsi_sub
 
 
-def clip_ref_files(clip_gdf, fips, ref_dir_uz, ref_dir_i, ref_names_dict):
+def clip_ref_files(clip_gdf, clip_str, fips_args, ref_downloads,
+                   wcard_dict, ref_dir_uz, ref_dir_i):
     """
     Clip reference shapefiles to a specified geometry and save the results.
     
@@ -90,10 +94,25 @@ def clip_ref_files(clip_gdf, fips, ref_dir_uz, ref_dir_i, ref_names_dict):
         GeoDataFrame containing the geometry to clip the reference files to.
         Typically represents a county or study area boundary.
     
-    fips : str
-        FIPS code for the county or area being processed. Used to organize
-        output files in the directory structure.
+    clip_str : str
+        Used to organize output files in the directory structure. Often
+        the FIPS code for the county or area being processed. Can also be
+        the name of a catchment area or other unit that may overlap with
+        several counties. 
+
+    fips_args: dict
+        A dictionary of the FIPS, STATEFIPS, and NATION key/value pairs for
+        a specific call of this function. 
     
+    ref_downloads: pd.DataFrame
+        A subset of the DOWNLOADS dataframe, subset to 
+        those for ref files, which we use to efficiently find
+        the .shp files for clipping. 
+    
+    wcard_dict: dict
+        A dictionary of the form wildcard strings take (e.g., {FIPS}) to the
+        value of those keys for a specific call of this function. 
+
     ref_dir_uz : str or Path
         Path to the directory containing unzipped reference shapefiles.
         Expected structure is ref_dir_uz/[NATION]/[TYPE]/tl_YYYY_[FIPS]_[TYPE].shp
@@ -102,10 +121,6 @@ def clip_ref_files(clip_gdf, fips, ref_dir_uz, ref_dir_i, ref_names_dict):
     ref_dir_i : str or Path
         Path to the interim directory where clipped files will be saved.
         Files will be saved as ref_dir_i/[FIPS]/[STANDARDIZED_NAME].gpkg
-    
-    ref_names_dict : dict
-        Dictionary mapping raw data file names to standardized names.
-        Example: {'tract': 'tracts', 'tabblock20bg': 'block', 'zcta520': 'zip_codes'}
     
     Returns
     -------
@@ -116,43 +131,35 @@ def clip_ref_files(clip_gdf, fips, ref_dir_uz, ref_dir_i, ref_names_dict):
     -----
     - All reference files are reprojected to match the CRS of clip_gdf before clipping
     - Output files are saved in GeoPackage (.gpkg) format for better performance
-    - The function processes all .shp files found recursively in ref_dir_uz
     """
     print("Processing reference files...")
-    # TODO it could be helpful to have the fips code
-    # also instruct us about where to read unzipped
-    # files from, at least the state fips argument. 
-    # Innocuous for now, but not scalable
-    # to just look at REF_DIR_UZ.
-
+    
     # Find all shapefiles in the reference directory
-    shapefiles = list(Path(ref_dir_uz).rglob("*.shp"))
-    print(f"Found {len(shapefiles)} shapefiles to process")
+    for ref_dwnld in ref_downloads.itertuples():
+        str_tokens, endpoint = undown.process_file(ref_dwnld)
+        if any(wcard in endpoint for wcard in wcard_dict.keys()):
+            filled_url = unfile.fill_wcard(endpoint, wcard_dict)
+        else:
+            filled_url = endpoint
+        ref_filename = filled_url.split('/')[-1][:-4] + '.shp'
+        ref_name_out = str_tokens[-1]
+        ref_filep = '/'.join([ref_dir_uz , fips_args[str_tokens[0]][0], 
+                              ref_name_out, ref_filename])
+      
+        print("Found shapefile: " + ref_name_out)
 
-    # For each .shp file in our unzipped ref directory
-    # we are going to reproject & clip, then write out
-    for path in Path(ref_dir_uz).rglob("*.shp"):
         # Read in the file
-        ref_shp = gpd.read_file(path)
-
-        # Process the filename to figure out what
-        # reference data this is
-        # the files are written out in the form of
-        # tl_2022_34_tract.shp, for example
-        # so we split the string on '_', take the
-        # last element of the array, and ignore
-        # the last 4 characters
-        ref_name = path.name.split("_")[-1][:-4]
-        # Replace the ref name with our ref_name dict values
-        ref_name_out = ref_names_dict[ref_name]
+        ref_shp = gpd.read_file(ref_filep)
+        print("Read reference")
 
         # Reproject and clip our reference shapefile
         ref_reproj = ref_shp.to_crs(clip_gdf.crs)
         ref_clipped = gpd.clip(ref_reproj, clip_gdf)
+        print("Reprojected and clipped")
 
         # Write file
-        ref_out_filep = join(ref_dir_i, fips, ref_name_out + ".gpkg")
-        prepare_saving(ref_out_filep)
+        ref_out_filep = join(ref_dir_i, clip_str, ref_name_out + ".gpkg")
+        unfile.prepare_saving(ref_out_filep)
         ref_clipped.to_file(ref_out_filep, driver="GPKG")
 
         # Helpful message to track progress
@@ -198,7 +205,7 @@ def process_national_sovi(sovi_list, fips, vuln_dir_r, ref_dir_i, vuln_dir_i):
 
         # Write file
         cejst_out_filep = join(vuln_dir_i, "social", fips, "cejst.gpkg")
-        prepare_saving(cejst_out_filep)
+        unfile.prepare_saving(cejst_out_filep)
         cejst_f.to_file(cejst_out_filep, driver="GPKG")
 
         print("Processed cejst")
@@ -259,64 +266,102 @@ def process_nfhl(fips, unzip_dir, pol_dir_i):
 
     # Write file
     nfhl_out_filep = join(pol_dir_i, fips, "fld_zones.gpkg")
-    prepare_saving(nfhl_out_filep)
+    unfile.prepare_saving(nfhl_out_filep)
     nfhl_f.to_file(nfhl_out_filep, driver="GPKG")
     # TODO better logging
     print("Wrote NFHL for county")
 
 
-def get_ref_ids(nsi_gdf, fips, ref_id_names_dict, ref_dir_i, exp_dir_i):
+def get_ref_ids(exp_gdf, clip_str, ref_id_names_dict, ref_dir_i, exp_dir_i):
     """
     Spatially join a gdf representing an administrative
-    reference, like census tract, that we want to link
-    to  individual structures.
-    We project the structures to the CRS of the
-    ref_gdf for the merge.
+    reference, like census tract, to individual structures.
 
-    nsi_gdf: GeoDataFrame of structures
-    var_gdf: GeoDataFrame of a reference file, like census tracts
+    Parameters
+    ----------
+    exp_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing the geometry to merge with the reference 
+        files. Typically represents NSI but can also be custom structure
+        inventory. The index must be set to the unique structure id. 
+    
+    clip_str : str
+        Used to organize output files in the directory structure. Often
+        the FIPS code for the county or area being processed. Can also be
+        the name of a catchment area or other unit that may overlap with
+        several counties. 
+
+    ref_id_names_dict: dict
+        A dictionary that links the ref id name to its unique id in the
+        dataset (e.g., census tracts have an id called 'GEOID')
+    
+    ref_dir_i : str or Path
+        Path to the interim directory where clipped files are located.
+
+    exp_dir_i : str or Path
+        Path to the interim directory where the 
+        "clip_str"_ref.pqt file will be saved.
+    
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame of the id and ref_ids linked together
+    
+    Notes
+    -----
+    - All reference files are reprojected to match the CRS of clip_gdf before clipping
+    - There is a single output file of structure id to ref id matches
     """
+    if exp_gdf.index.name is None:
+        no_id_warn = ("Warning: No ID set as index. It is highly recommended" +
+                       " to set an index for consistent merges later in your workflow.")
+        warnings.warn(no_id_warn)
 
     ref_df_list = []
     for ref_name, ref_id in ref_id_names_dict.items():
         # We don't need to process county if it's in REF_ID_NAMES_DICT
-        # because NSI is already linked to counties, and counties
-        # are our unit of analysis, so we know this
+        # because that can be inferred from other reference data
         if ref_name != "county":
-            ref_filep = join(ref_dir_i, fips, ref_name + ".gpkg")
+            ref_filep = join(ref_dir_i, clip_str, ref_name + ".gpkg")
 
             # Load in the ref file
             ref_geo = gpd.read_file(ref_filep)
+            print("Read ref file: " + ref_name)
 
             # Limit the geodataframe to our ref id and 'geometry' column
             keep_col = [ref_id, "geometry"]
             ref_geo_sub = ref_geo[keep_col]
 
-            # Limit the NSI to our fd_id and geometry column
-            keep_col_nsi = ["fd_id", "geometry"]
-            nsi_sub = nsi_gdf[keep_col_nsi]
+            # Limit the exp to our geometry column
+            keep_col_nsi = ["geometry"]
+            exp_sub = exp_gdf[keep_col_nsi]
+
+            # For now, do centroid of structures if not already
+            # the geometry type
+            if any(exp_gdf.geometry.type == 'Polygon'):
+                # Make sure we are in a projected geometry
+                # when getting the centroid
+                exp_gdf['geometry'] = exp_gdf['geometry'].to_crs(epsg='5070')
+                exp_gdf['geometry'] = exp_gdf['geometry'].centroid
 
             # Reproj nsi_sub to the reference crs
-            nsi_reproj = nsi_sub.to_crs(ref_geo.crs)
-
+            exp_reproj = exp_sub.to_crs(ref_geo.crs)
+            
             # Do a spatial join
-            nsi_ref = gpd.sjoin(nsi_reproj, ref_geo_sub, predicate="within")
+            exp_ref = gpd.sjoin(exp_reproj, ref_geo_sub, predicate="within")
+            print("Spatial join with structures")
 
             # Set index to fd_id and just keep the ref_id
             # Rename that column to our ref_name + '_id'
             # Append this to our ref_df_list
-            nsi_ref_f = nsi_ref.set_index("fd_id")[[ref_id]]
-            nsi_ref_f = nsi_ref_f.rename(columns={ref_id: ref_name + "_id"})
-            ref_df_list.append(nsi_ref_f)
+            exp_ref_f = exp_ref[[ref_id]]
+            exp_ref_f = exp_ref_f.rename(columns={ref_id: ref_name + "_id"})
+            ref_df_list.append(exp_ref_f)
 
             # Helpful message
-            print("Linked reference to NSI: " + ref_name + "_id")
+            print("Linked reference to structures: " + ref_name + "_id")
 
     # Can concat and write
-    nsi_refs = pd.concat(ref_df_list, axis=1).reset_index()
-    ref_filep = join(exp_dir_i, fips, "nsi_ref.pqt")
-    prepare_saving(ref_filep)
-    nsi_refs.to_parquet(ref_filep)
+    return pd.concat(ref_df_list, axis=1).reset_index()
 
 
 def get_spatial_var(nsi_gdf, var_gdf, var_name, fips, exp_dir_i, var_keep_cols=None):
@@ -351,7 +396,7 @@ def get_spatial_var(nsi_gdf, var_gdf, var_name, fips, exp_dir_i, var_keep_cols=N
     nsi_out = nsi_joined[keep_cols]
 
     nsi_out_filep = join(exp_dir_i, fips, "nsi_" + var_name + ".pqt")
-    prepare_saving(nsi_out_filep)
+    unfile.prepare_saving(nsi_out_filep)
     nsi_out.to_parquet(nsi_out_filep)
     print("Wrote out: " + var_name)
 
@@ -394,7 +439,7 @@ def get_inundations(nsi_gdf, haz_crs, ret_pers, haz_dir_uz, haz_filen, scens=Non
     if scens is not None:
         for scen in scens:
             for rp in ret_pers:
-                dg = read_dg(rp, haz_dir_uz, haz_filen, scen)
+                dg = unfile.read_dg(rp, haz_dir_uz, haz_filen, scen)
                 print("Read in " + rp + " depth grid")
 
                 sampled_depths = [x[0] for x in dg.sample(coord_list)]
@@ -407,7 +452,7 @@ def get_inundations(nsi_gdf, haz_crs, ret_pers, haz_dir_uz, haz_filen, scens=Non
                 print("Added depths to list\n")
     else:
         for rp in ret_pers:
-            dg = read_dg(rp, haz_dir_uz, haz_filen)
+            dg = unfile.read_dg(rp, haz_dir_uz, haz_filen)
             print("Read in " + rp + " depth grid")
 
             sampled_depths = [x[0] for x in dg.sample(coord_list)]
@@ -431,7 +476,7 @@ def get_inundations(nsi_gdf, haz_crs, ret_pers, haz_dir_uz, haz_filen, scens=Non
     # based on the need for a unit conversion, which
     # could potentially be inferred from the CRS
     # of the hazard data
-    depth_df_f = depth_df_f * MTR_TO_FT
+    depth_df_f = depth_df_f * uncnst.MTR_TO_FT
 
     # DDFs do not have the precision to handle
     # any finer rounding than this.
