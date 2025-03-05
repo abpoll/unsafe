@@ -1,3 +1,12 @@
+"""
+UNSAFE: Depth-Damage Functions
+
+This module provides functions for processing and applying 
+depth-damage functions to estimate flood damages. It supports multiple
+DDF sources and uncertainty quantification.
+
+"""
+
 # Packages
 import pandas as pd
 import numpy as np
@@ -7,16 +16,46 @@ import json
 from unsafe.const import *
 from unsafe.files import *
 
-"""
-Helpful functions for processing depth-damage functions
-that are stored in different data structures
-"""
 
-
-# HAZUS and USACE DDFs can be
-# formatted in tidy df format
-# this way
 def tidy_ddfs(raw_ddf, idvars):
+    """
+    Convert depth-damage function data from wide to tidy (long) format.
+    
+    This function transforms depth-damage function data from wide format (where
+    depths are columns) to long format (where depths are rows). It also processes
+    depth values, converting them from string format (e.g., "1ft", "-1m") to 
+    numeric values in feet, and normalizes damage percentages to proportions.
+    
+    Parameters
+    ----------
+    raw_ddf : pandas.DataFrame
+        Raw depth-damage function data in wide format, where:
+        - Columns include identifier variables and depth columns
+        - Values represent damage percentages (0-100)
+    
+    idvars : list
+        List of column names to use as identifier variables (not to be melted).
+        Examples: ['ddf_id', 'occ_type', 'dam_cat']
+    
+    Returns
+    -------
+    pandas.DataFrame
+        Tidy (long-format) dataframe with columns:
+        - All columns from idvars
+        - depth_str: Original depth string (e.g., "1ft")
+        - pct_dam: Original damage percentage (0-100)
+        - depth_ft: Depth in feet as float
+        - rel_dam: Relative damage as proportion (0-1)
+    
+    Notes
+    -----
+    Wide format is the standard way HAZUS DDFs are available, so other DDFs
+    tend to have the same raw data structure so they can be processed similarly.
+    Depth strings with 'm' suffix are treated as negative depths (e.g., "-1m").
+    All depths are converted to feet.
+    """
+    print("Converting depth-damage functions to tidy (long) format...")
+
     # For HAZUS we have occtype and fld_zone
     # For NACCS we have Occupancy and DamageCategory
     ddf_melt = raw_ddf.melt(id_vars=idvars, var_name="depth_str", value_name="pct_dam")
@@ -45,6 +84,34 @@ def tidy_ddfs(raw_ddf, idvars):
 
 
 def ddf_max_depth_dict(tidy_ddf, dam_col):
+    """
+    Create a dictionary mapping DDF types to damage parameters at maximum depths
+    of the DDF data.
+    
+    This function identifies the maximum depth for each depth-damage function (DDF) type
+    and creates a lookup dictionary that maps each DDF type to its damage parameters
+    at that maximum depth. This is used to handle cases where flood depths exceed
+    the maximum depth defined in the DDF.
+    
+    Parameters
+    ----------
+    tidy_ddf : pandas.DataFrame
+        A tidy (long-format) dataframe containing DDF data with columns:
+        - ddf_type: Identifier for the DDF type
+        - depth_ft: Depth values in feet
+        - dam_col: Column name containing damage parameters
+    
+    dam_col : str
+        Name of the column containing damage parameters (e.g., 'params')
+    
+    Returns
+    -------
+    dict
+        Dictionary mapping DDF type identifiers to their damage parameters
+        at maximum depth. Format: {ddf_type: damage_params}
+    """
+    print("Creating maximum depth dictionary for DDFs...")
+    
     # We want all depths above max depths for the DDFs
     # to take the param values of the max depth DDF
     # First, we groupby bld type for naccs and get max depth for
@@ -58,25 +125,64 @@ def ddf_max_depth_dict(tidy_ddf, dam_col):
     # We will just use this dict to fill the param values
     # with those corresponding to the max depth for that same bld type
     DDF_DICT = dict(zip(max_d_params["ddf_type"], max_d_params[dam_col]))
+    print(f"Created dictionary for {len(DDF_DICT)} DDFs")
 
     return DDF_DICT
 
 
 def process_naccs(vuln_dir_uz, vuln_dir_i):
     """
-    Default processing and generation of the NACCS DDFs
+    Process NACCS (North Atlantic Coast Comprehensive Study) depth-damage functions.
+    
+    This function reads raw NACCS depth-damage function (DDF) data, processes it into
+    a standardized format with triangular distribution parameters, and saves the 
+    processed data for use in flood damage calculations.
+    
+    Parameters
+    ----------
+    vuln_dir_uz : str or Path
+        Path to the directory containing unzipped vulnerability data files,
+        specifically the 'naccs_ddfs.csv' file
+    vuln_dir_i : str or Path
+        Path to the interim directory where processed DDF files will be saved
+        
+    Returns
+    -------
+    None
+        Results are saved to disk at the specified locations
+        
+    Notes
+    -----
+    The processing includes:
+    - Extracting occupancy type and DDF ID information
+    - Reformatting the data into a tidy structure
+    - Interpolating damage values at regular depth intervals
+    - Organizing triangular distribution parameters (Min, ML, Max)
+    - Saving both the processed DDFs and maximum depth dictionary
+    
+    The output files include:
+    - A parquet file with processed DDFs at vuln_dir_i/physical/naccs_ddfs.pqt
+    - A JSON file with maximum depths at vuln_dir_i/physical/naccs.json, used for 
+    estimating damages at and above max depths
+    
     """
+    print("Starting NACCS DDF processing...")
+    
+    # Load raw NACCS depth-damage function data
     naccs = pd.read_csv(join(vuln_dir_uz, "naccs_ddfs.csv"))
+    print(f"Loaded {len(naccs)} NACCS DDF records")
 
     # For NACCS, we have the RES 1 DDFs
     # NACCS need some preprocessing as well
     # First, subset to the relevant Occupancy types
     # We want to end up with ddf ids 1swb, etc.
     # don't need to keep the RES1- part for this case study
+    print("Extracting occupancy types and DDF IDs...")
     naccs["occ_type"] = naccs["Occupancy"].str.split("-").str[0]
     naccs["ddf_id"] = naccs["Occupancy"].str.split("-").str[1]
 
     # Next, drop columns we don't need
+    print("Removing unnecessary columns...")
     drop_cols = ["Description", "Source", "Occupancy"]
     naccs = naccs.drop(columns=drop_cols)
 
@@ -86,6 +192,7 @@ def process_naccs(vuln_dir_uz, vuln_dir_i):
     )
 
     # Now get the melted dataframe
+    print("Converting to tidy (long) format...")
     idvars = ["ddf_id", "occ_type", "dam_cat"]
     naccs_melt = tidy_ddfs(naccs, idvars)
 
@@ -94,13 +201,16 @@ def process_naccs(vuln_dir_uz, vuln_dir_i):
     naccs_f = naccs_melt.drop(columns=drop_cols)
 
     # We want to pivot the dataframe so that Min/ML/Max are our columns
+    print("Pivoting data to organize damage categories...")
     naccs_piv = naccs_f.pivot(index=["ddf_id", "occ_type", "depth_ft"], columns="dam_cat")[
         "rel_dam"
     ].reset_index()
+    print(f"Pivot complete with {len(naccs_piv)} unique depth points")
 
     # We do the interpolation again
     df_int_list = []
     for ddf_type, df in naccs_piv.groupby(["ddf_id", "occ_type"]):
+        print(f"  Interpolating depths for {ddf_type}...")
         # This creates the duplicate rows
         ddf_int = df.loc[np.repeat(df.index, 10)].reset_index(drop=True)
         # Now we have to make them nulls by finding
@@ -124,9 +234,11 @@ def process_naccs(vuln_dir_uz, vuln_dir_i):
     # Drop the p_cols
     naccs_out = naccs_ddfs.drop(columns=p_cols)
     naccs_out = naccs_out.assign(params=tri_params.tolist())
+    print(f"Parameter lists created for {len(naccs_out)} depth points")
 
     # Get out dict of max depths
     NACCS_MAX_DICT = ddf_max_depth_dict(naccs_out.reset_index(drop=True), "params")
+    print(f"Maximum depth dictionary created with {len(NACCS_MAX_DICT)} entries")
 
     # Main directory
     ddf_out_dir = join(vuln_dir_i, "physical")
