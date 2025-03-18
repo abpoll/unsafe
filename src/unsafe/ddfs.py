@@ -212,11 +212,15 @@ def process_naccs(vuln_dir_uz, vuln_dir_i):
     for ddf_type, df in naccs_piv.groupby(["ddf_id", "occ_type"]):
         print(f"  Interpolating depths for {ddf_type}...")
         # This creates the duplicate rows
-        ddf_int = df.loc[np.repeat(df.index, 10)].reset_index(drop=True)
+        # from min to max depth sampled at .1 feet
+        new_depths = np.arange(df['depth_ft'].min(),
+                               df['depth_ft'].max() + .1,
+                               .1).round(1)
+        new_depths = pd.Series(new_depths, name='depth_ft')
+        ddf_int = df.merge(new_depths, on='depth_ft', how='right')
         # Now we have to make them nulls by finding
         # the "original" indexed rows
         float_cols = ["depth_ft", "ML", "Max", "Min"]
-        ddf_int.loc[ddf_int.index % 10 != 0, float_cols] = np.nan
         # Now we interpolate (again, on floats)
         ddf_int_floats = ddf_int[float_cols].interpolate().round(2)
         # Add in our ddf type col
@@ -485,14 +489,33 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
     print("HAZUS DDFs processed")
 
 
-def est_naccs_loss(bld_types, depths, ddfs, MAX_DICT):
+def est_naccs_loss(ddf_types, depths, ffes, ddfs, MAX_DICT, base_adj):
     # We are going to use a random number generator
     rng = np.random.default_rng()
 
     # Combine building types and depths on index
-    bld_depths = pd.concat([bld_types, pd.Series(depths)], axis=1)
+    bld_depths = pd.concat([pd.Series(ddf_types),
+                            pd.Series(depths),
+                            pd.Series(ffes)], axis=1)
     # Rename columns to correspond to each series
-    bld_depths.columns = ["ddf_type", "depth_ft"]
+    bld_depths.columns = ["ddf_type", "depth", "ffe"]
+
+    # Get depth relative to first floor elevation, considering basement
+    # adjustment
+    BSMT_HGT = 9
+    wb_obs = bld_depths['ddf_type'].str[2:4] == 'WB'
+    bld_depths.loc[~wb_obs, 'depth_ft'] = (bld_depths.loc[~wb_obs, 'depth'] 
+                                            - bld_depths.loc[~wb_obs, 'ffe'])
+    if base_adj:
+        bld_depths.loc[wb_obs, 'depth_ft'] = (bld_depths.loc[wb_obs, 'depth']
+                                               - BSMT_HGT)
+    else:
+        bld_depths.loc[wb_obs, 'depth_ft'] = (bld_depths.loc[wb_obs, 'depth']
+                                               - bld_depths.loc[wb_obs, 'ffe'])
+
+    # Round to the precision of our depth-damage functions
+    bld_depths['depth_ft'] = bld_depths['depth_ft'].round(1).copy()
+
     # Merge bld_type/depths with the ddfs to get params linked up
     # Need to create columns for the merge
     # We use the number 100, since this is our floating point precision
@@ -507,6 +530,9 @@ def est_naccs_loss(bld_types, depths, ddfs, MAX_DICT):
     )
     # Drop the merge column
     loss_prep = loss_prep.drop(columns="merge")
+    # Update depth_ft to null if below basement depth
+    below_base = loss_prep['depth_ft'] < -BSMT_HGT
+    loss_prep.loc[below_base, 'depth_ft'] = np.nan
     # Helpful to have a mask for where there are no flood depths
     loss_mask = loss_prep["depth_ft"].notnull()
     # When depths are null, no flooding so no damages
@@ -516,7 +542,7 @@ def est_naccs_loss(bld_types, depths, ddfs, MAX_DICT):
     # assign the params from the max depth for the same bld_type
     missing_rows = (loss_mask) & (loss_prep["params"].isnull())
     missing_params = loss_prep.loc[missing_rows]["ddf_type"].map(MAX_DICT)
-
+    
     # Replace the entries with missing params but positive depths
     loss_prep.loc[missing_rows, "params"] = missing_params
     # Now we can estimate losses for all notnull() depth_ft rows
@@ -554,15 +580,90 @@ def est_naccs_loss(bld_types, depths, ddfs, MAX_DICT):
     # Return our loss estimates
     return losses
 
+def est_naccs_loss_nounc(ddf_types, depths, ffes, ddfs, MAX_DICT, base_adj=True):
+    # Combine building types and depths on index
+    bld_depths = pd.concat([ddf_types, pd.Series(depths), pd.Series(ffes)], axis=1)
+    # Rename columns to correspond to each series
+    bld_depths.columns = ["ddf_type", "depth", "ffe"]
 
-def est_hazus_loss(hazus_ddf_types, depths, ddfs, MAX_DICT):
+    # Get depth relative to first floor elevation, considering basement
+    # adjustment
+    BSMT_HGT = 9
+    wb_obs = bld_depths['ddf_type'].str[2:4] == 'WB'
+    bld_depths.loc[~wb_obs, 'depth_ft'] = (bld_depths.loc[~wb_obs, 'depth'] 
+                                            - bld_depths.loc[~wb_obs, 'ffe'])
+    if base_adj:
+        bld_depths.loc[wb_obs, 'depth_ft'] = (bld_depths.loc[wb_obs, 'depth']
+                                               - BSMT_HGT)
+    else:
+        bld_depths.loc[wb_obs, 'depth_ft'] = (bld_depths.loc[wb_obs, 'depth']
+                                               - bld_depths.loc[wb_obs, 'ffe'])
+
+    # Round to the precision of our depth-damage functions
+    bld_depths['depth_ft'] = bld_depths['depth_ft'].round(1).copy()
+
+    # Merge bld_type/depths with the ddfs to get params linked up
+    # Need to create columns for the merge
+    # We use the number 100, since this is our floating point precision
+    # for these DDFs
+    bld_depths["merge"] = np.where(
+        bld_depths["depth_ft"].isnull(), -9999, np.round(bld_depths["depth_ft"] * 100)
+    ).astype(int)
+    ddfs["merge"] = np.round(ddfs["depth_ft"] * 100).astype(int)
+    # Drop column 'depth_ft' from ddfs for the merge
+    loss_prep = bld_depths.merge(
+        ddfs.drop(columns="depth_ft"), on=["ddf_type", "merge"], how="left"
+    )
+    # Drop the merge column
+    loss_prep = loss_prep.drop(columns="merge")
+    # Update depth_ft to null if below basement depth
+    below_base = loss_prep['depth_ft'] < -BSMT_HGT
+    loss_prep.loc[below_base, 'depth_ft'] = np.nan
+    # Helpful to have a mask for where there are no flood depths
+    loss_mask = loss_prep["depth_ft"].notnull()
+    # When depths are null, no flooding so no damages
+    loss_prep.loc[~loss_mask, "rel_dam"] = 0
+    # There are some depths greater than the support from DDFs
+    # We are going to use the max_d_dict from preparing the DDFs to
+    # assign the params from the max depth for the same bld_type
+    missing_rows = (loss_mask) & (loss_prep["params"].isnull())
+    missing_params = loss_prep.loc[missing_rows]["ddf_type"].map(MAX_DICT)
+    
+    # Replace the entries with missing params but positive depths
+    loss_prep.loc[missing_rows, "rel_dam"] = missing_params
+    
+    # Just use ml_dam column for loss_mask
+    loss_prep.loc[loss_mask, "rel_dam"] = loss_prep.loc[loss_mask, "ml_dam"]
+
+    # Return our loss estimates
+    return loss_prep["rel_dam"]
+
+def est_hazus_loss(hazus_ddf_types, depths, ffes, ddfs, MAX_DICT, base_adj=True):
     # We are going to use a random number generator
     rng = np.random.default_rng()
 
     # Combine building types and depths on index
-    bld_depths = pd.concat([hazus_ddf_types, pd.Series(depths)], axis=1)
+    bld_depths = pd.concat([hazus_ddf_types, pd.Series(depths), pd.Series(ffes)],
+                           axis=1)
     # Rename columns to correspond to each series
-    bld_depths.columns = ["ddf_type", "depth_ft"]
+    bld_depths.columns = ["ddf_type", "depth", "ffe"]
+
+    # Get depth relative to first floor elevation, considering basement
+    # adjustment
+    BSMT_HGT = 4
+    wb_obs = bld_depths['ddf_type'].str[2:4] == 'WB'
+    bld_depths.loc[~wb_obs, 'depth_ft'] = (bld_depths.loc[~wb_obs, 'depth'] 
+                                            - bld_depths.loc[~wb_obs, 'ffe'])
+    if base_adj:
+        bld_depths.loc[wb_obs, 'depth_ft'] = (bld_depths.loc[wb_obs, 'depth']
+                                               - BSMT_HGT)
+    else:
+        bld_depths.loc[wb_obs, 'depth_ft'] = (bld_depths.loc[wb_obs, 'depth']
+                                               - bld_depths.loc[wb_obs, 'ffe'])
+
+    # Round to the precision of our depth-damage functions
+    bld_depths['depth_ft'] = bld_depths['depth_ft'].round(1).copy()
+
     # Merge bld_type/depths with the ddfs to get params linked up
     # Need to create columns for the merge
     # We use the number 10, since this is our floating point precision
@@ -576,6 +677,9 @@ def est_hazus_loss(hazus_ddf_types, depths, ddfs, MAX_DICT):
     )
     # Drop the merge column
     loss_prep = loss_prep.drop(columns="merge")
+    # Update depth_ft to null if below basement depth
+    below_base = loss_prep['depth_ft'] < -BSMT_HGT
+    loss_prep.loc[below_base, 'depth_ft'] = np.nan
     # Helpful to have a mask for where there are no flood depths
     loss_mask = loss_prep["depth_ft"].notnull()
     # When depths are null, no flooding so no damages
@@ -621,11 +725,29 @@ def est_hazus_loss(hazus_ddf_types, depths, ddfs, MAX_DICT):
     return losses
 
 
-def est_hazus_loss_nounc(bld_types, depths, ddfs, MAX_DICT):
+def est_hazus_loss_nounc(hazus_ddf_types, depths, ffes, ddfs, MAX_DICT, base_adj=True):
     # Combine building types and depths on index
-    bld_depths = pd.concat([bld_types, pd.Series(depths)], axis=1)
+    bld_depths = pd.concat([hazus_ddf_types, pd.Series(depths), pd.Series(ffes)],
+                           axis=1)
     # Rename columns to correspond to each series
-    bld_depths.columns = ["ddf_type", "depth_ft"]
+    bld_depths.columns = ["ddf_type", "depth", "ffe"]
+
+    # Get depth relative to first floor elevation, considering basement
+    # adjustment
+    BSMT_HGT = 4
+    wb_obs = bld_depths['ddf_type'].str[2:4] == 'WB'
+    bld_depths.loc[~wb_obs, 'depth_ft'] = (bld_depths.loc[~wb_obs, 'depth'] 
+                                            - bld_depths.loc[~wb_obs, 'ffe'])
+    if base_adj:
+        bld_depths.loc[wb_obs, 'depth_ft'] = (bld_depths.loc[wb_obs, 'depth']
+                                               - BSMT_HGT)
+    else:
+        bld_depths.loc[wb_obs, 'depth_ft'] = (bld_depths.loc[wb_obs, 'depth']
+                                               - bld_depths.loc[wb_obs, 'ffe'])
+
+    # Round to the precision of our depth-damage functions
+    bld_depths['depth_ft'] = bld_depths['depth_ft'].round(1).copy()
+
     # Merge bld_type/depths with the ddfs to get params linked up
     # Need to create columns for the merge
     # We use the number 10, since this is our floating point precision
@@ -639,10 +761,14 @@ def est_hazus_loss_nounc(bld_types, depths, ddfs, MAX_DICT):
     )
     # Drop the merge column
     loss_prep = loss_prep.drop(columns="merge")
+    # Update depth_ft to null if below basement depth
+    below_base = loss_prep['depth_ft'] < -BSMT_HGT
+    loss_prep.loc[below_base, 'depth_ft'] = np.nan
     # Helpful to have a mask for where there are no flood depths
     loss_mask = loss_prep["depth_ft"].notnull()
     # When depths are null, no flooding so no damages
     loss_prep.loc[~loss_mask, "rel_dam"] = 0
+
     # There could be some depths greater than the support from DDFs
     # Fill these in based on the HAZUS_DEF_MAX_DICT
     missing_rows = (loss_mask) & (loss_prep["rel_dam"].isnull())
@@ -656,7 +782,7 @@ def est_hazus_loss_nounc(bld_types, depths, ddfs, MAX_DICT):
     return losses
 
 
-def get_losses(depth_ffe_df, ddf, ddf_types, s_values, vuln_dir_i):
+def get_losses(depths_df, ffes, ddf, ddf_types, s_values, vuln_dir_i, base_adj):
     """
     For a given dataframe of depths relative to first floor elevation
     and a given depth-damage function library (i.e. hazus), call
@@ -664,8 +790,10 @@ def get_losses(depth_ffe_df, ddf, ddf_types, s_values, vuln_dir_i):
     in depth_ffe_df. This returns relative losses scaled by
     the quantitites provided in the s_values serires
 
-    depth_ffe_df: DataFrame, scenarios/return periods with depths relative to ffe
-    linked to each structure
+    depth_ffe_df: DataFrame
+        depths for each scenario/return period under consideration
+    ffes: np.array
+        first floor elevation of ensemble members, same index as depths_df
     ddf: str, the name of the ddf library
     ddf_types: Series, the occupancy codes that tell us what ddf to use
     s_values: Series, the value realizations for the structures
@@ -681,19 +809,18 @@ def get_losses(depth_ffe_df, ddf, ddf_types, s_values, vuln_dir_i):
     # Get the relative loss based on the ddf provided
     # and then scale this by the values series
     loss = {}
-    for d_col in depth_ffe_df.columns:
-        scen_name = "_".join(d_col.split("_")[1:])
+    for d_col in depths_df.columns:
         if ddf == "naccs":
             rel_loss = est_naccs_loss(
-                ddf_types, depth_ffe_df[d_col], naccs_ddfs, NACCS_MAX_DICT
+                ddf_types, depths_df[d_col], ffes, naccs_ddfs, NACCS_MAX_DICT, base_adj
             )
         elif ddf == "hazus":
             rel_loss = est_hazus_loss(
-                ddf_types, depth_ffe_df[d_col], hazus_ddfs, HAZUS_MAX_DICT
+                ddf_types, depths_df[d_col], ffes, hazus_ddfs, HAZUS_MAX_DICT
             )
 
-        loss[scen_name] = rel_loss.values * s_values
-        print("Losses estimated: " + scen_name)
+        loss[d_col] = rel_loss.values * s_values
+        print("Losses estimated: " + d_col)
 
     loss_df = pd.DataFrame.from_dict(loss)
     loss_df.columns = ["loss_" + x for x in loss_df.columns]

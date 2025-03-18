@@ -90,6 +90,9 @@ def fill_wcard(wcard_str, wcard_dict):
 # This may have to be modified on a study-by-study
 # basis so long as there is not a standardized
 # way to share flood hazard model output data
+# Not sure we need this function. Seems like something
+# you should do in processing your own hazard data
+# This was helpful for one case study... 
 def read_dg(rp, haz_dir_uz, haz_filen, scen=None):
     # Makes sense we would also have the depth grids stored
     # in directories for different %iles

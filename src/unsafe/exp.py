@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 from shapely.geometry import shape
 import rasterio
+import rioxarray as rio
+import xarray as xr
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 import rasterio.mask
 from pyproj import CRS
@@ -400,6 +402,42 @@ def get_spatial_var(nsi_gdf, var_gdf, var_name, fips, exp_dir_i, var_keep_cols=N
     nsi_out.to_parquet(nsi_out_filep)
     print("Wrote out: " + var_name)
 
+def pnt_sample_depths(raster, points_gdf, idxcol, name):
+    """
+    Sample values from a rioxarray raster at specified point locations.
+    
+    Parameters
+    ----------
+    raster : rioxarray.DataArray
+        The raster dataset to sample from
+    points_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing point geometries to sample
+    idxcol : str
+        The name of the column to set as an index from points_gdf
+    name : str
+        The name of the depth grid
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of sampled values, one for each point
+    """
+    # Ensure points are in the same CRS as the raster
+    points_reproj = points_gdf.to_crs(raster.rio.crs)
+    
+    # Extract x and y coordinates
+    x_coords = points_reproj.geometry.x.values
+    y_coords = points_reproj.geometry.y.values
+    
+    # Sample the raster at the specified points
+    # using rioxarray's sel method with nearest neighbor interpolation
+    sampled_values = raster.sel(x=xr.DataArray(x_coords), 
+                                y=xr.DataArray(y_coords), 
+                                method="nearest").values[0]
+    
+    depths = pd.Series(sampled_values, index=points_reproj[idxcol], name=name)
+    
+    return depths
 
 def get_inundations(nsi_gdf, haz_crs, ret_pers, haz_dir_uz, haz_filen, scens=None):
     """
