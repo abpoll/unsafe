@@ -144,6 +144,7 @@ def get_loss_ensemble(
         - 'base_adj': Boolean for starting basement flooding from bottom of basement
         - 'found_param': Prop. of structures in each ref_id area with various foundation types
         - 'stories_param': Prop. of structures in each ref_id area with various stories
+        - 'depth_min': Integer for filtering low depths (in ft) from damage estimation (default: 0)
     
     random_seed : int, optional
         Random seed for reproducibility.
@@ -170,11 +171,10 @@ def get_loss_ensemble(
 
     # Set random seed if provided
     if random_seed is not None:
-        np.random.seed(random_seed)
-    
-    # Set up random number generator
-    rng = np.random.default_rng(random_seed)
-    
+        rng = np.random.default_rng(random_seed)
+    else:
+        rng = np.random.default_rng()
+       
     # Set default configuration if not provided
     if config is None:
         config = {}
@@ -192,12 +192,17 @@ def get_loss_ensemble(
     ddfs = config.get('ddfs', ['naccs'])
     found_param = config.get('found_param', None)
     stories_param = config.get('stories_param', None)
+    depth_min = config.get('depth_min', 0)
 
     print(f"Generating ensemble with {n_sow} states of the world...")
     print(f"Uncertain characteristics: {struct_list}")
 
     # Convert depths to ft
     depths_df = depths_df*unconst.MTR_TO_FT
+
+    # Drop any depths as required
+    # If depth_min is 0, this drops any null depths
+    depths_df = depths_df[depths_df.sum(axis=1) > depth_min]
 
     # Create the ens_df based on a join of the structures_df and depths_df
     # We join on the shared index and then get the id_col into the 
@@ -257,7 +262,7 @@ def get_loss_ensemble(
         # one param. Arbitrarily choose 1
         # Round the param to the hundredth place
         # Store in a dict
-        stories_param = stories_param[1].round(2)
+        stories_param = stories_param[1].round(3)
         stry_dict = dict(stories_param)
 
         # Draw from the #stories distribution
@@ -298,6 +303,9 @@ def get_loss_ensemble(
         # for direct use in our multinomial distribution draw
         # Store params in a list (each row is ref_col id and corresponds to
         # its own probabilities of each foundation type)
+        # This ensures alphabetical ordering which the mapping approach
+        # below relies on
+        found_param = found_param.sort_index(axis=1)
         params = found_param.values
         # Then create our dictionary
         fnd_dict = dict(zip(found_param.index, params))
@@ -719,7 +727,7 @@ def generate_ensemble(
 
     return final_ens_df
 
-def benchmark_naccs_loss(structures_df, depths_df, vuln_dir_i, base_adj=True):
+def benchmark_naccs_loss(structures_df, depths_df, vuln_dir_i, base_adj=True, depth_min=None):
     """
     Estimate losses without any uncertainty using NSI
     and NACCS most likely curves
@@ -732,6 +740,10 @@ def benchmark_naccs_loss(structures_df, depths_df, vuln_dir_i, base_adj=True):
         DataFrame of depths, must share index with base_df
 
     vuln_dir_i: str, location of the ddfs
+
+    base_adj: boolean, whether inundation starts at bottom of basement
+
+    depth_min: Integer, filter for when to apply DDFs (default: None)
     """
     # We need the DDFs w/o uncertainty
     naccs_ddfs = pd.read_parquet(join(vuln_dir_i, "physical", "naccs_ddfs.pqt"))
@@ -746,8 +758,18 @@ def benchmark_naccs_loss(structures_df, depths_df, vuln_dir_i, base_adj=True):
     # Convert depths to ft
     depths_df = depths_df*unconst.MTR_TO_FT
 
+    # Drop any depths as required
+    # If depth_min is 0, this drops any null depths
+    depths_df = depths_df[depths_df.sum(axis=1) > depth_min]
+
     # Join structures and depths
     base_df = structures_df.join(depths_df, how='inner')
+
+    # Update occtypes for buildings with basements
+    base_df['occtype'] = np.where(((base_df['occtype'] == 'RES3A') &
+                                   (base_df['found_type'] == 'B')),
+                                   'RES1',
+                                   base_df['occtype'])
 
     # Preparing the building type variable
     stories = np.where(((base_df['occtype'] == 'RES3A') &
@@ -761,15 +783,12 @@ def benchmark_naccs_loss(structures_df, depths_df, vuln_dir_i, base_adj=True):
                  + pd.Series(base_types, index=base_df.index))
     ddf_types = bld_types + '_' + base_df['occtype']
 
-    # Subset depths_df to records in the base df for loss estimation
-    depths_df = depths_df[depths_df.index.isin(base_df.index)].copy()
-
     # Loss estimation routine
     loss = {}
     for d_col in depths_df.columns:
         nounc_rel_loss = est_naccs_loss_nounc(
             ddf_types,
-            depths_df[d_col],
+            base_df[d_col],
             base_df['found_ht'],
             naccs_ddfs,
             naccs_max_ml,

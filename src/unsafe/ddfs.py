@@ -630,7 +630,7 @@ def est_naccs_loss_nounc(ddf_types, depths, ffes, ddfs, MAX_DICT, base_adj=True)
     missing_params = loss_prep.loc[missing_rows]["ddf_type"].map(MAX_DICT)
     
     # Replace the entries with missing params but positive depths
-    loss_prep.loc[missing_rows, "rel_dam"] = missing_params
+    loss_prep.loc[missing_rows, "ml_dam"] = missing_params
     
     # Just use ml_dam column for loss_mask
     loss_prep.loc[loss_mask, "rel_dam"] = loss_prep.loc[loss_mask, "ml_dam"]

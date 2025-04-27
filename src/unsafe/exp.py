@@ -349,7 +349,7 @@ def get_ref_ids(exp_gdf, clip_str, ref_id_names_dict, ref_dir_i, exp_dir_i):
             exp_reproj = exp_sub.to_crs(ref_geo.crs)
             
             # Do a spatial join
-            exp_ref = gpd.sjoin(exp_reproj, ref_geo_sub, predicate="within")
+            exp_ref = gpd.sjoin(exp_reproj, ref_geo_sub, predicate="intersects")
             print("Spatial join with structures")
 
             # Set index to fd_id and just keep the ref_id
@@ -357,6 +357,8 @@ def get_ref_ids(exp_gdf, clip_str, ref_id_names_dict, ref_dir_i, exp_dir_i):
             # Append this to our ref_df_list
             exp_ref_f = exp_ref[[ref_id]]
             exp_ref_f = exp_ref_f.rename(columns={ref_id: ref_name + "_id"})
+            # Drop duplicate bfid if any
+            exp_ref_f = exp_ref_f[~exp_ref_f.index.duplicated(keep='first')]
             ref_df_list.append(exp_ref_f)
 
             # Helpful message
