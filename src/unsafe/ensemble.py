@@ -144,7 +144,7 @@ def get_loss_ensemble(
         - 'base_adj': Boolean for starting basement flooding from bottom of basement
         - 'found_param': Prop. of structures in each ref_id area with various foundation types
         - 'stories_param': Prop. of structures in each ref_id area with various stories
-        - 'depth_min': Integer for filtering low depths (in ft) from damage estimation (default: 0)
+        - 'depth_min': float for filtering low depths (in m) from damage estimation (default: 0)
     
     random_seed : int, optional
         Random seed for reproducibility.
@@ -197,12 +197,12 @@ def get_loss_ensemble(
     print(f"Generating ensemble with {n_sow} states of the world...")
     print(f"Uncertain characteristics: {struct_list}")
 
-    # Convert depths to ft
-    depths_df = depths_df*unconst.MTR_TO_FT
-
     # Drop any depths as required
     # If depth_min is 0, this drops any null depths
     depths_df = depths_df[depths_df.sum(axis=1) > depth_min]
+
+    # Convert depths to ft
+    depths_df = depths_df*unconst.MTR_TO_FT
 
     # Create the ens_df based on a join of the structures_df and depths_df
     # We join on the shared index and then get the id_col into the 
