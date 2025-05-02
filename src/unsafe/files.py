@@ -80,6 +80,11 @@ def fill_wcard(wcard_str, wcard_dict):
 
     # Get a list of all the wildcards we need to replace for this string
     wildcards = [wcard for wcard in wcard_dict.keys() if wcard in wcard_str]
+    
+    # If no wcard tokens, we can just return the endpoint
+    if not wildcards:
+        return wcard_str
+
     # Replace the wildcard with the value stored in a wildcard dictionary
     for wildcard in wildcards:
         replaced_str = wcard_str.replace(wildcard, wcard_dict[wildcard])
