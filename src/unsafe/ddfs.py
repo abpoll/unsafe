@@ -369,6 +369,11 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
     # Drop columns
     hazus = hazus_melt.drop(columns=dropcols)
 
+    # Add RES1 occupancy back into the ddf
+    # Should be able to modify this for future use 
+    # with more building types rather easily
+    hazus['occtype'] = hazus['ddf_type'] + '_' + 'RES1'
+
     # We need to interpolate between the values of the DDF that we
     # are given. Generally speaking, this introduces artificial spread
     # in the relative damage distribution since the interpolation is
@@ -383,7 +388,7 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
     # (besides ddf_type). Then we interpolate, store in a list
     # and concat at the end
     df_int_list = []
-    for ddf_type, df in hazus.groupby("ddf_type"):
+    for ddf_type, df in hazus.groupby("occtype"):
         # This creates the duplicate rows
         ddf_int = df.loc[np.repeat(df.index, 10)].reset_index(drop=True)
         # Now we have to make them nulls by finding
@@ -450,7 +455,7 @@ def process_hazus(vuln_dir_uz, vuln_dir_i, unif_unc=0.3):
 
     # We can call our helper function to get our dictionaries
     HAZUS_MAX_DICT = ddf_max_depth_dict(hazus_f.reset_index(drop=True), "params")
-    HAZUS_MAX_NOUNC_DICT = ddf_max_depth_dict(hazus, "rel_dam")
+    HAZUS_MAX_NOUNC_DICT = ddf_max_depth_dict(hazus_f.reset_index(drop=True), "rel_dam")
 
     # We need one hazus file with params for
     # uncertainty and one w/ just rel_dam
@@ -643,7 +648,7 @@ def est_hazus_loss(hazus_ddf_types, depths, ffes, ddfs, MAX_DICT, base_adj=True)
     rng = np.random.default_rng()
 
     # Combine building types and depths on index
-    bld_depths = pd.concat([hazus_ddf_types, pd.Series(depths), pd.Series(ffes)],
+    bld_depths = pd.concat([pd.Series(hazus_ddf_types), pd.Series(depths), pd.Series(ffes)],
                            axis=1)
     # Rename columns to correspond to each series
     bld_depths.columns = ["ddf_type", "depth", "ffe"]
@@ -727,7 +732,7 @@ def est_hazus_loss(hazus_ddf_types, depths, ffes, ddfs, MAX_DICT, base_adj=True)
 
 def est_hazus_loss_nounc(hazus_ddf_types, depths, ffes, ddfs, MAX_DICT, base_adj=True):
     # Combine building types and depths on index
-    bld_depths = pd.concat([hazus_ddf_types, pd.Series(depths), pd.Series(ffes)],
+    bld_depths = pd.concat([pd.Series(hazus_ddf_types), pd.Series(depths), pd.Series(ffes)],
                            axis=1)
     # Rename columns to correspond to each series
     bld_depths.columns = ["ddf_type", "depth", "ffe"]
@@ -790,7 +795,7 @@ def get_losses(depths_df, ffes, ddf, ddf_types, s_values, vuln_dir_i, base_adj):
     in depth_ffe_df. This returns relative losses scaled by
     the quantitites provided in the s_values serires
 
-    depth_ffe_df: DataFrame
+    depths_df: DataFrame
         depths for each scenario/return period under consideration
     ffes: np.array
         first floor elevation of ensemble members, same index as depths_df
@@ -816,7 +821,7 @@ def get_losses(depths_df, ffes, ddf, ddf_types, s_values, vuln_dir_i, base_adj):
             )
         elif ddf == "hazus":
             rel_loss = est_hazus_loss(
-                ddf_types, depths_df[d_col], ffes, hazus_ddfs, HAZUS_MAX_DICT
+                ddf_types, depths_df[d_col], ffes, hazus_ddfs, HAZUS_MAX_DICT, base_adj
             )
 
         loss[d_col] = rel_loss.values * s_values

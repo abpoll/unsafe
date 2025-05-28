@@ -839,6 +839,7 @@ def benchmark_loss(structures_df, depths_df, vuln_dir_i, base_adj=True):
     hazus_ddf_types = np.where(
         base_types == "WB", bld_types + "_" + base_df["fz_ddf"], bld_types
     )
+    ddf_types = hazus_ddf_types + '_' + base_df['occtype']
 
     # Subset depths_df to records in the base df for loss estimation
     depths_df = depths_df[depths_df.index.isin(base_df.index)].copy()
@@ -848,7 +849,7 @@ def benchmark_loss(structures_df, depths_df, vuln_dir_i, base_adj=True):
     for d_col in depths_df.columns:
         rp = d_col.split("_")[-1]
         nounc_rel_loss = est_hazus_loss_nounc(
-            hazus_ddf_types,
+            ddf_types,
             depths_df[d_col],
             base_df['found_ht'],
             hazus_nounc,
