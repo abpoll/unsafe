@@ -36,8 +36,10 @@ download:
         # We use the national flood hazard layer for flood zones
         # These URLs currently are not in a structured format so I manually input this
         # after searching on the FEMA map services center
+        # As of 5/27/25 the FEMA map services center doesn't work for me, but I luckily
+        # was able to find the data on a Pennsylvania data portal
         pol:
-          nfhl: "https://hazards.fema.gov/nfhlv2/output/County/420757_20230701.zip"
+          nfhl: "https://www.pasda.psu.edu/download/philacity/data/Philadelphia_NFHL_42_2023.zip"
         
   STATEABBR:
     url:
@@ -52,7 +54,7 @@ download:
     url:
       vuln:
         social:
-          # CEJST and CDC SVI
+          # CEJST 
           cejst: "https://dblew8dgr6ajz.cloudfront.net/data-versions/2.0/data/score/downloadable/2.0-communities.csv"
       ref:
         # County and zip code tabulation area spatial data available for the whole country
@@ -164,7 +166,7 @@ ffe_dict:
   B: [0, 1.5, 4]
 
 # Number of SOWs
-sows: 10000
+sows: 1000
 
 # Hazard model configurations
 # Keep track of return periods
