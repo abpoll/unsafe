@@ -227,12 +227,12 @@ def process_national_sovi(sovi_list, fips, vuln_dir_r, ref_dir_i, vuln_dir_i):
         print("Processed CDC SVI")
 
 
-def process_nfhl(fips, unzip_dir, pol_dir_i):
+def process_nfhl(fips, unzip_dir, pol_dir_i, filename):
     """
     Process the raw NFHL data and write it out
     """
     # We want S_FLD_HAZ_AR
-    fld_haz_fp = join(unzip_dir, fips, "S_FLD_HAZ_AR.shp")
+    fld_haz_fp = join(unzip_dir, fips, filename)
     nfhl = gpd.read_file(fld_haz_fp)
 
     # Keep FLD_ZONE, FLD_AR_ID, STATIC_BFE, geometry
