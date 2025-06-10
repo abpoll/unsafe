@@ -45,7 +45,7 @@ def get_nsi_geo(fips, nsi_crs, exp_dir_r):
     return nsi_gdf
 
 
-def get_struct_subset(nsi_gdf, filter=None, occtype_list=None):
+def get_struct_subset(nsi_gdf, filter=None, sub_cols=[], occtype_list=[]):
     """
     Return a column subset gdf in terms of columns for
     generating the structure ensemble. Also subset
@@ -55,25 +55,10 @@ def get_struct_subset(nsi_gdf, filter=None, occtype_list=None):
     and currently this function does not send helpful messages
     if you pass an incorrect string, so caveat emptor.
     """
-    sub_cols = [
-        "fd_id",
-        "occtype",
-        "found_type",
-        "cbfips",
-        "bldgtype",
-        "ftprntsrc",
-        "found_ht",
-        "val_struct",
-        "sqft",
-        "val_cont",
-        "source",
-        "firmzone",
-        "ground_elv_m",
-        "num_story",
-        "geometry",
-    ]
-
-    nsi_sub = nsi_gdf.loc[:, sub_cols]
+    if sub_cols:
+        nsi_sub = nsi_gdf.loc[:, sub_cols]
+    else:
+        nsi_sub = nsi_gdf.copy()
 
     if filter is not None:
         nsi_sub = nsi_sub.query(filter)
