@@ -493,13 +493,13 @@ def benchmark_naccs_loss(structures_df, depths_df, vuln_dir_i, base_adj=True, de
     naccs_ddfs['ml_dam'] = naccs_ddfs['params'].apply(lambda x: x[1])
     naccs_max_ml = {k: v[1] for k, v in NACCS_MAX_DICT.items()}
 
-    # Convert depths to ft
-    depths_df = depths_df*unconst.MTR_TO_FT
-
     # Drop any depths as required
     # If depth_min is 0, this drops any null depths
     depths_df = depths_df[depths_df.sum(axis=1) > depth_min]
 
+    # Convert depths to ft
+    depths_df = depths_df*unconst.MTR_TO_FT
+    
     # Join structures and depths
     base_df = structures_df.join(depths_df, how='inner')
 
