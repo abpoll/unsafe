@@ -37,7 +37,7 @@ download:
         # These URLs currently are not in a structured format so I manually input this
         # after searching on the FEMA map services center
         pol:
-          nfhl: "https://hazards.fema.gov/nfhlv2/output/County/420757_20230701.zip"
+          nfhl: "https://www.pasda.psu.edu/download/philacity/data/Philadelphia_NFHL_42_2023.zip"
         
   STATEABBR:
     url:
@@ -45,20 +45,19 @@ download:
         # replace STATE_FIPS with st_fips in the download rule
         # We have a helper function in a util/ directory that replaces
         # Tract, block group, and block geospatial boundaries are available at state level
-        tract: "https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{STATEFIPS}_tract.zip"
-        bg: "https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_{STATEFIPS}_bg.zip"
-        block: "https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_{STATEFIPS}_tabblock20.zip"
+        tract: "https://web.archive.org/web/20231130105526/https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{STATEFIPS}_tract.zip"
+        bg: "https://web.archive.org/web/20240604063409/https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_{STATEFIPS}_bg.zip"
+        block: "https://web.archive.org/web/20240608162400/https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_{STATEFIPS}_tabblock20.zip"
   NATION:
     url:
       vuln:
         social:
-          # CEJST and CDC SVI
+          # CEJST
           cejst: "https://dblew8dgr6ajz.cloudfront.net/data-versions/2.0/data/score/downloadable/2.0-communities.csv"
-          svi: "https://svi.cdc.gov/Documents/Data/2020/csv/states/SVI_2020_US.csv"
       ref:
         # County and zip code tabulation area spatial data available for the whole country
-        county: "https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_us_county.zip"
-        zcta: "https://www2.census.gov/geo/tiger/TIGER2022/ZCTA520/tl_2022_us_zcta520.zip"
+        county: "https://web.archive.org/web/20240422040051/https://www2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_us_county.zip"
+        zcta: "https://web.archive.org/web/20230627184104/https://www2.census.gov/geo/tiger/TIGER2022/ZCTA520/tl_2022_us_zcta520.zip"
 # We need to keep track of the format different api data is returned in
 # to write it out
 api_ext:
@@ -165,7 +164,7 @@ ffe_dict:
   B: [0, 1.5, 4]
 
 # Number of SOWs
-sows: 10000
+sows: 1000
 
 # Hazard model configurations
 # Keep track of return periods
