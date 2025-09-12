@@ -72,7 +72,7 @@ We provide annotated, comprehensive [examples](https://github.com/abpoll/unsafe/
 
 We recommend reading the `README.md` in the root of the `examples/` directory before working through either example. 
 
-We are working on creating automated tests, but in the meantime please run the partial data example when you start working with `UNSAFE` to verify the functionality of the package and that you have set up your machine to run it. You can verify outputs for the partial data example [here](htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/phil_frd_partial/notebooks/partial_data_example.html) and the full data example [here](htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html).
+We are working on creating automated tests, but in the meantime please run the partial data example when you start working with `UNSAFE` to verify the functionality of the package and that you have set up your machine to run it. You can verify outputs for the partial data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/phil_frd_partial/notebooks/partial_data_example.html) and the full data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html).
 
 ## Documentation
 * **Technical Documentation**: Available in the `docs/` directory, currently `v01.pdf`, which you can access [here](https://github.com/abpoll/unsafe/blob/main/docs/v01.pdf).
