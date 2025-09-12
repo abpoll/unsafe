@@ -6,9 +6,9 @@ In this guide, we provide an overview of the contribution workflow from opening 
 ## Getting started
 Please check out the [Installation](https://github.com/abpoll/unsafe?tab=readme-ov-file#installation) instructions on our README. 
 
-Run the [partial data example](https://github.com/abpoll/unsafe/tree/main/examples/phil_frd_partial) and verify your outputs [here](https://html-preview.github.io/?url=https://github.com/abpoll/unsafe/blob/main/examples/phil_frd_partial/notebooks/partial_data_example.html). 
+Run the [partial data example](https://github.com/abpoll/unsafe/tree/main/examples/phil_frd_partial) and verify your outputs [here](htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/phil_frd_partial/notebooks/partial_data_example.html). 
 
-Run the [full data example](https://github.com/abpoll/unsafe/tree/main/examples/philadelphia_frd) and verify your outputs [here](https://html-preview.github.io/?url=https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html).
+Run the [full data example](https://github.com/abpoll/unsafe/tree/main/examples/philadelphia_frd) and verify your outputs [here](htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html).
 
 ## Issues
 ### Create an issue
