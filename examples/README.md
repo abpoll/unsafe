@@ -28,4 +28,4 @@ These instructions were successfully followed, and the full data example was suc
 
 1) Ubuntu 22.04.4 LTS (GNU/Linux 5.15.0-102-generic x86_64) machine with mamba version 1.4.2
 
-Please check the output of the partial data example [here](https://htmlpreview.github.io/https://github.com/abpoll/unsafe/blob/main/examples/phil_frd_partial/notebooks/partial_data_example.html) and full data example [here](https://htmlpreview.github.io/https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html) to check your results!
+Please check the output of the partial data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/phil_frd_partial/notebooks/partial_data_example.html) and full data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html) to check your results! Note that because `UNSAFE` samples stochastically, your figures and results might look slightly different than the ones here - but they should look similar. 
