@@ -11,24 +11,26 @@ authors:
     corresponding: true
     email: adam.b.pollack@dartmouth.edu
     orcid: 0000-0001-6642-0591
-    affiliation: 1
+    affiliation: [1, 2]
   - name: James Doss-Gollin
     orcid: 0000-0002-3428-2224
-    affiliation: 2
+    affiliation: 3
   - name: Vivek Srikrishnan
     orcid: 0000-0003-0049-3805
-    affiliation: 3
+    affiliation: 4
   - name: Klaus Keller
     orcid: 0000-0002-5451-8687
     affiliation: 1
 affiliations:
  - name: Thayer School of Engineering, Dartmouth College, USA
    index: 1
- - name: Department of Civil and Environmental Engineering, Rice University, USA
+ - name: School of Earth, Environment, and Sustainability, University of Iowa, USA
    index: 2
- - name: Department of Biological and Environmental Engineering, Cornell University, USA
+ - name: Department of Civil and Environmental Engineering, Rice University, USA
    index: 3
-date: 2 April 2024
+ - name: Department of Biological and Environmental Engineering, Cornell University, USA
+   index: 4
+date: 22 September 2025
 bibliography: paper.bib
 
 ---
