@@ -1,6 +1,6 @@
 # Uncertain Structure and Fragility Ensemble (**UNSAFE**) framework for property-level flood risk estimation
 
-[![Version](https://img.shields.io/badge/version-0.1-blue.svg)](https://github.com/abpoll/unsafe)
+[![Version](https://img.shields.io/badge/version-0.2-blue.svg)](https://github.com/abpoll/unsafe)
 [![License](https://img.shields.io/badge/License-BSD--2--Clause-green.svg)](LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance-Active-brightgreen.svg)](Maintenance)
 
