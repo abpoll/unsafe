@@ -49,7 +49,7 @@ Several existing tools help contextualize the methodological gap that UNSAFE add
 ## Target audience and use cases
 `UNSAFE` is designed for a technical user base. Analysts in research, government, or industry that manage custom code to conduct flood-risk assessments may benefit from integrating `UNSAFE`'s functionality into their workflows. Maintainers of other flood-risk estimation software are also welcome to adapt `UNSAFE`'s methods for estimating damage under uncertainty and integrate it into their tools. `UNSAFE` could also serve as the back-end risk estimation software for user-interfaces and tools that aim to bridge the gap between non-technical users and robust flood-risk estimates. 
 
-To date, several peer-reviewed studies use `UNSAFE` for automating flood-risk estimation under uncertainty based on the widely used NSI [@USACE-nsi2024] (e.g., [@Pollack2025-j40] and [@Bhaduri2025]). A recently published preprint uses `UNSAFE` with a local, more accurate building inventory and compares the obtained risk estimates to those obtained with the NSI [@Pollack2025-nsi]. 
+To date, several peer-reviewed studies use `UNSAFE` for automating flood-risk estimation under uncertainty based on the widely used NSI [@USACE-nsi2024] (e.g., @Pollack2025-j40 and @Bhaduri2025). A recently published preprint uses `UNSAFE` with a local, more accurate building inventory and compares the obtained risk estimates to those obtained with the NSI [@Pollack2025-nsi]. 
 
 
 ## Technical details
@@ -100,9 +100,12 @@ def get_loss_ensemble(
         - 'id_col': Column name for structure identifier (default: 'fd_id')
         - 'ddfs': List of depth-damage function types to use (e.g., ['hazus', 'naccs'])
         - 'base_adj': Boolean for starting basement flooding from bottom of basement
-        - 'found_param': Prop. of structures in each ref_id area with various foundation types
-        - 'stories_param': Prop. of structures in each ref_id area with various stories
-        - 'depth_min': float for filtering low depths (in m) from damage estimation (default: 0)
+        - 'found_param': Prop. of structures in each ref_id area 
+        with various foundation types
+        - 'stories_param': Prop. of structures in each ref_id area 
+        with various stories
+        - 'depth_min': float for filtering low depths 
+        (in m) from damage estimation (default: 0)
     
     random_seed : int, optional
         Random seed for reproducibility.
@@ -123,7 +126,7 @@ def get_loss_ensemble(
     """
 ```
 
-This function returns a DataFrame containing an ensemble of damage estimates and realizations of uncertain characteristics n_sow realizations for a sample size of *n_sow*. After running this function, a user can conduct a wide range of analyses (e.g., as done in [@Bhaduri2025 or @Pollack2025-nsi]) though it is also possible to use `UNSAFE` to obtain more robust estimates of the mean damage estimate for a structure across the sampled realizations (e.g., [@Pollack2025-j40])
+This function returns a DataFrame containing an ensemble of damage estimates and realizations of uncertain characteristics n_sow realizations for a sample size of *n_sow*. After running this function, a user can conduct a wide range of analyses (e.g., as done in @Bhaduri2025 or @Pollack2025-nsi) though it is also possible to use `UNSAFE` to obtain more robust estimates of the mean damage estimate for a structure across the sampled realizations (e.g., @Pollack2025-j40)
 
 The function includes default values for the options in the `config` dict argument. The default behavior for the function infers the uncertain distribution for parameters such as a structure's number of stories or foundation type based on overall census tract proportions. Users may modify these priors with the keys `stories_param` or `found_param`. Users may modify other priors as well. For example, users can update uncertainty around structure value assessment by modifying the `coef_var` key, or first-floor elevation with structure-level updates or a dict that maps foundation types to a distribution of possible foundation heights. 
 
