@@ -169,9 +169,9 @@ While `UNSAFE` helps analysts' to better account for often overlooked uncertaint
 
 In addition, `UNSAFE`'s current functionality is strongly conditioned to the common depth-damage function paradigm for flood-risk estimation in the United States. There are many structural characteristics and broader hazard-damage relationships that may be desirable for some analysts. We aim to expand `UNSAFE`'s capabilities beyond the depth-damage function paradigm for more generic application. 
 
-Further, `UNSAFE` has limited functionality regarding the wide range of possible uncertainty analyses. For example, `UNSAFE` only accommodates random sampling based on parametric uncertainty and what-if based exploration of structural uncertainties. There are many uncertainty analyses that require other sampling techniques or additional modules for calibrating prior distributions. These are important gaps we aim to reconcile. 
+Further, `UNSAFE` has limited functionality regarding the wide range of possible uncertainty analyses. For example, `UNSAFE` only accommodates random sampling based on parametric uncertainty and what-if based exploration of structural uncertainties. There are many uncertainty analyses that require other sampling techniques or additional modules for calibrating prior distributions. 
 
-Finally, we recommend that analysts perform their own convergence analysis to ensure they sufficiently sample from the input uncertainties under consideration. A recent preprint finds that 500 samples (*i.e.,* setting `n_sow=500`) is sufficient for converged mean property-level flood-risk estimates [@Pollack2025-nsi]. Still, analysts pursuing different outcomes of interest may need less or more samples. 
+Finally, we recommend that analysts perform their own convergence analysis to ensure they sufficiently sample from the input uncertainties under consideration. A recent preprint finds that 500 samples (*i.e.,* setting `n_sow=500`) is sufficient for converged mean property-level flood-risk estimates [@Pollack2025-nsi]. Still, analysts pursuing different outcomes of interest may need fewer or more samples. 
 
 
 # Acknowledgements
