@@ -129,7 +129,7 @@ def get_loss_ensemble(
     """
 ```
 
-This function returns a DataFrame containing an ensemble of damage estimates and realizations of uncertain characteristics n_sow realizations for a sample size of *n_sow*. After running this function, a user can conduct a wide range of analyses based on the ensemble (e.g., as done in @Bhaduri2025 or @Pollack2025-nsi) though it is also possible to use `UNSAFE` for the purpose of obtaining more robust estimates of the mean damage estimate for a structure across the sampled realizations (e.g., @Pollack2025-j40)
+This function returns a DataFrame containing an ensemble of damage estimates from `n_sow` realizations of uncertain characteristics. After running this function, a user can conduct a wide range of analyses based on the ensemble (e.g., as done in @Bhaduri2025 or @Pollack2025-nsi) though it is also possible to use `UNSAFE` for the simpler purpose of obtaining more robust estimates of the mean damage estimate for a structure across the sampled realizations (e.g., @Pollack2025-j40)
 
 The function includes default values for the options in the `config` dict argument. The default behavior for the function infers the uncertain distribution for parameters such as a structure's number of stories or foundation type based on overall census tract proportions. Users may modify these priors with the keys `stories_param` or `found_param`. Users may modify other priors as well. For example, users can update uncertainty around structure value assessment by modifying the `coef_var` key, or first-floor elevation with structure-level updates or a dict that maps foundation types to a distribution of possible foundation heights. 
 
@@ -137,12 +137,12 @@ Users may elect not to account for uncertainty in certain exposure characteristi
 
 Users may also add additional data sources to a configuration file (e.g., flood risk analyses often use spatial data on administrative zones or socioeconomic data) and `download_raw()` will download the corresponding data and place it in the specified subdirectories. The recommended configuration file structure is described in detail in the file `examples/phil_frd_partial/notebooks/partial_data_example.ipynb` available at the software's [Zenodo repository](https://zenodo.org/records/17362970). 
 
-Before generating an ensemble, there are several processing steps `UNSAFE` does not automate to allow for greater analyst flexibility. These steps are best illustrated through an example. 
+Before generating an ensemble, there are several processing steps `UNSAFE` does not automate to allow for greater analyst flexibility, such as processing external building inventories and flood hazard data. These steps are best illustrated through an example. 
 
 ## Example
 A tutorial that demonstrates the basic functionality of `UNSAFE` is available in the file `examples/phil_frd_partial/notebooks/partial_data_example.ipynb` available at the software's [Zenodo repository](https://zenodo.org/records/17362970). 
 
-In this example, we conduct a very small case study on a small area in Philadelphia based on depth grids available via FEMA's risk map project. The notebook serves to demonstrate the following workflow to help introduce new users to the `UNSAFE` framework, and to allow them to test that the code does what it says it does. 
+In this example, we conducted a very small case study on a small area in Philadelphia based on depth grids available via FEMA's risk map project. The notebook serves to demonstrate the following workflow to help introduce new users to the `UNSAFE` framework, and to allow them to test that the code does what it says it does. 
 
 1) Configure the working directory structure and workflow parameters;
 2) Download and unzip data;
@@ -169,7 +169,9 @@ While `UNSAFE` helps analysts' to better account for often overlooked uncertaint
 
 In addition, `UNSAFE`'s current functionality is strongly conditioned to the common depth-damage function paradigm for flood-risk estimation in the United States. There are many structural characteristics and broader hazard-damage relationships that may be desirable for some analysts. We aim to expand `UNSAFE`'s capabilities beyond the depth-damage function paradigm for more generic application. 
 
-Finally, `UNSAFE` may be difficult to use for calibrating the distributions of uncertain inputs. For example, `UNSAFE` only accommodates random sampling based on parametric uncertainty and what-if based exploration of structural uncertainties. This limitation requires that analysts perform their own convergence analysis to ensure they sufficiently sample from the input uncertainties under consideration. A recent preprint finds that 500 samples (*i.e.,* setting `n_sow=500`) is sufficient for converged mean property-level flood-risk estimates [@Pollack2025-nsi]. Still, analysts pursuing different outcomes of interest may need less or more samples. Further, there are many uncertainty analyses that require other sampling techniques or additional modules for calibrating prior distributions. These are important gaps we aim to reconcile. 
+Further, `UNSAFE` has limited functionality regarding the wide range of possible uncertainty analyses. For example, `UNSAFE` only accommodates random sampling based on parametric uncertainty and what-if based exploration of structural uncertainties. There are many uncertainty analyses that require other sampling techniques or additional modules for calibrating prior distributions. These are important gaps we aim to reconcile. 
+
+Finally, we recommend that analysts perform their own convergence analysis to ensure they sufficiently sample from the input uncertainties under consideration. A recent preprint finds that 500 samples (*i.e.,* setting `n_sow=500`) is sufficient for converged mean property-level flood-risk estimates [@Pollack2025-nsi]. Still, analysts pursuing different outcomes of interest may need less or more samples. 
 
 
 # Acknowledgements
