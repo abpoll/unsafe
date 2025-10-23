@@ -61,7 +61,7 @@ For analyses using the NSI as the base structure inventory, users can specify th
 
 To estimate flood risk, it is sufficient for analysts to supply flood depth data and specify a base structure inventory. The main functionality of of `UNSAFE` is executed in the following function in the `unsafe.ensemble` module:
 
-```
+```{python}
 def get_loss_ensemble(
     structures_df,
     depths_df,
