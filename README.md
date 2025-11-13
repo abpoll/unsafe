@@ -3,7 +3,7 @@
 [![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](https://github.com/abpoll/unsafe)
 [![License](https://img.shields.io/badge/License-BSD--2--Clause-green.svg)](LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance-Active-brightgreen.svg)](Maintenance)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17316891.svg)](https://doi.org/10.5281/zenodo.17316891)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.07527/status.svg)](https://doi.org/10.21105/joss.07527)
 
 
 **UNSAFE** is an open-source framework for estimating property-level flood risk that explicitly accounts for uncertainties in exposure and vulnerability.
