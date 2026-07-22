@@ -14,8 +14,9 @@ To run these examples, you will need to have have [conda](https://docs.conda.io/
 
 1) Change your working directory to `examples/` and then run `conda env create -f env/environment.yml` or replace `conda` with `mamba`. 
 2) Activate the environment.
-3) Create an ipykernel for the environment. If you are new to Jupyter Notebooks and/or conda, please see: https://ipython.readthedocs.io/en/stable/install/kernel_install.html#kernels-for-different-environments. We ran `$ python -m ipykernel install --user --name unsafe`
-4) Change your working directory back to the root of the cloned UNSAFE repository and run `pip install -e .` so that the unsafe modules can be imported. 
+3) Run `pip install zipfile-deflate64`. For the full data example, one of the archives was created on a Windows machine and compressed in a way that Python's `zipfile` module cannot handle. 
+4) Create an ipykernel for the environment. If you are new to Jupyter Notebooks and/or conda, please see: https://ipython.readthedocs.io/en/stable/install/kernel_install.html#kernels-for-different-environments. We ran `$ python -m ipykernel install --user --name unsafe`
+5) Change your working directory back to the root of the cloned UNSAFE repository and run `pip install -e .` so that the unsafe modules can be imported. 
 
 When you go to the Jupyter notebooks to run the examples, make sure you activate the unsafe environment. 
 
@@ -28,4 +29,6 @@ These instructions were successfully followed, and the full data example was suc
 
 1) Ubuntu 22.04.4 LTS (GNU/Linux 5.15.0-102-generic x86_64) machine with mamba version 1.4.2
 
-Please check the output of the partial data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/phil_frd_partial/notebooks/partial_data_example.html) and full data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html) to check your results! Note that because `UNSAFE` samples stochastically, your figures and results might look slightly different than the ones here - but they should look similar. 
+Please check the output of the partial data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/phil_frd_partial/notebooks/partial_data_example.html) and full data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html) to check your results! Note that because `UNSAFE` samples stochastically, your figures and results might look slightly different than the ones here - but they should look similar.
+
+Please note that these examples were last run using the 2026 NSI, downloaded in July of 2026. If you use a different version, you will likely obtain different results. We try to keep these examples up to date with the latest releases of the NSI. 

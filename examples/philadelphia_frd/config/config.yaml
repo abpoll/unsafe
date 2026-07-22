@@ -47,7 +47,6 @@ download:
         # Tract, block group, and block geospatial boundaries are available at state level
         tract: "https://web.archive.org/web/20231130105526/https://www2.census.gov/geo/tiger/TIGER2022/TRACT/tl_2022_{STATEFIPS}_tract.zip"
         bg: "https://web.archive.org/web/20240604063409/https://www2.census.gov/geo/tiger/TIGER2022/BG/tl_2022_{STATEFIPS}_bg.zip"
-        block: "https://web.archive.org/web/20240608162400/https://www2.census.gov/geo/tiger/TIGER2022/TABBLOCK20/tl_2022_{STATEFIPS}_tabblock20.zip"
   NATION:
     url:
       vuln:
@@ -96,7 +95,6 @@ haz_crs: "EPSG:3725"
 # what we want them to say
 ref_names:
   tract: "tract"
-  tabblock20: "block"
   bg: "bg"
   county: "county"
   zcta520: "zcta"
@@ -105,7 +103,6 @@ ref_names:
 # id column
 ref_id_names:
   tract: "GEOID"
-  block: "GEOID20"
   bg: "GEOID"
   county: "GEOID"
   zcta: "GEOID20"

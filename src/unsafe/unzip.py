@@ -2,8 +2,7 @@
 from os.path import join
 from pathlib import Path
 import glob
-from zipfile import ZipFile
-import zipfile_deflate64
+from zipfile import ZipFile, BadZipFile
 from collections import Counter
 from unsafe.files import *
 from unsafe.const import *
@@ -87,21 +86,39 @@ def unzip_raw(fr, unzip_dir):
     count = Counter(unzip_dirs)
     need_subdir = [k for k, v in count.items() if v > 1]
 
+    failed = []
+
     for i, filepath in enumerate(to_unzip):
         path = Path(filepath)
 
         # If unzip_dirs[i] is in need_subdir
         # we are going to add a subdirectory
-        # from str.split('/')[-1][:-4]
+        # from the stem of the filepath
         # This gives us cdc from cdc.zip, for example
 
         out_filedir = unzip_dirs[i]
         if unzip_dirs[i] in need_subdir:
-            subdir = filepath.split("/")[-1][:-4]
-            out_filedir = join(out_filedir, subdir)
+            out_filedir = join(out_filedir, path.stem)
 
-        with ZipFile(path, "r") as zip_ref:
-            zip_ref.extractall(out_filedir)
+        try:
+            with ZipFile(path, "r") as zip_ref:
+                zip_ref.extractall(out_filedir)
 
-        # TODO helpful log message
-        print("Unzipped: " + str(path.name).split(".")[0])
+            print(f"Unzipped: {path.name}")
+
+        except BadZipFile as e:
+            failed.append((path, f"Invalid or unsupported ZIP archive ({e})"))
+
+        except Exception as e:
+            failed.append((path, str(e)))
+
+    if failed:
+        print("\nThe following archives could not be extracted:")
+        for path, reason in failed:
+            print(f"  - {path.name}")
+            print(f"      Reason: {reason}")
+
+        print(
+            "\nIf the archive uses Deflate64 compression, install "
+            "'zipfile-deflate64' and import it before calling unzip_raw()."
+        )

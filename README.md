@@ -1,6 +1,6 @@
 # UNSAFE: An UNcertain Structure And Fragility Ensemble framework for property-level flood risk estimation
 
-[![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](https://github.com/abpoll/unsafe)
+[![Version](https://img.shields.io/badge/version-0.2.2-blue.svg)](https://github.com/abpoll/unsafe)
 [![License](https://img.shields.io/badge/License-BSD--2--Clause-green.svg)](LICENSE)
 [![Maintenance](https://img.shields.io/badge/Maintenance-Active-brightgreen.svg)](Maintenance)
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.07527/status.svg)](https://doi.org/10.21105/joss.07527)
@@ -65,6 +65,7 @@ If you want to edit the source code and/or run examples:
 
 ## Examples
 
+### Tutorials
 We provide annotated, comprehensive [examples](https://github.com/abpoll/unsafe/tree/main/examples) to help get you started:
 
 1. Partial Data Example: A tutorial with all the required data included in the repository. 
@@ -74,6 +75,13 @@ We provide annotated, comprehensive [examples](https://github.com/abpoll/unsafe/
 
 We recommend reading the `README.md` in the root of the `examples/` directory before working through either example. 
 
+### Published examples
+For more complete examples, you can check out the following repositories for projects in different study areas and with different goals using `UNSAFE`:
+
+* <https://github.com/abpoll/j40_gc> (Version 0.1)
+* <https://github.com/abpoll/nsi_fit> (Version 0.2)
+
+### Testing
 We are working on creating automated tests, but in the meantime please run the partial data example when you start working with `UNSAFE` to verify the functionality of the package and that you have set up your machine to run it. You can verify outputs for the partial data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/phil_frd_partial/notebooks/partial_data_example.html) and the full data example [here](https://htmlpreview.github.io/?https://github.com/abpoll/unsafe/blob/main/examples/philadelphia_frd/notebooks/full_data_example.html). Note that because `UNSAFE` samples stochastically, your figures and results might look slightly different than the ones here - but they should look similar. 
 
 ## Documentation
@@ -83,7 +91,8 @@ We are working on creating automated tests, but in the meantime please run the p
 ## Contributions
 
 We warmly welcome contributions from the community!
-If you're interested in contributing to **UNSAFE**, we'd love to have you involved.
+If you're interested in contributing to **UNSAFE**, we'd love to have you involved. Please check out the [guidelines for contributing](https://github.com/abpoll/unsafe/blog/main/CONTRIBUTING.md).
+
 Feel free to engage with the development team on GitHub - we're excited to collaborate with you.
 
 To get started, simply fork the repository and run `pip install -e .` from the project root to set up your local environment for testing and development.
@@ -94,12 +103,28 @@ We look forward to working with you to make **UNSAFE** even better!
 This project is licensed under the BSD-2-Clause License. Please see the [LICENSE](https://github.com/abpoll/unsafe/blob/main/LICENSE) file for details. 
 
 ## Citation
-**UNSAFE** is currently under review at the Journal of Open Source Software (JOSS). If you use **UNSAFE** in your research, please cite the preprint:
+**UNSAFE** has been published at the Journal of Open Source Software (JOSS). If you use **UNSAFE** in your research, please [cite the paper](./CITATION.cff).
+
+### Citation String
 ```
-Pollack, A., Doss-Gollin, J., Srikrishnan, V., & Keller, K. (2024, May 20). UNSAFE: An UNcertain Structure And Fragility Ensemble framework for property-level flood risk estimation. https://doi.org/10.31219/osf.io/jb9ta
+Pollack et al., (2025). UNSAFE: An UNcertain Structure And Fragility Ensemble framework for property-level flood risk estimation. Journal of Open Source Software, 10(115), 7527, https://doi.org/10.21105/joss.07527
 ```
 
-We will update the citation when the review at JOSS is finished. 
+### Bibtex
+```
+@article{Pollack2025,
+    doi = {10.21105/joss.07527},
+    url = {https://doi.org/10.21105/joss.07527},
+    year = {2025},
+    publisher = {The Open Journal},
+    volume = {10},
+    number = {115},
+    pages = {7527},
+    author = {Pollack, Adam and Doss-Gollin, James and Srikrishnan, Vivek and Keller, Klaus},
+    title = {UNSAFE: An UNcertain Structure And Fragility Ensemble framework for property-level flood risk estimation},
+    journal = {Journal of Open Source Software} 
+} 
+```
 
 ## Acknowledgements
 

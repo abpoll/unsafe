@@ -1,5 +1,6 @@
 import json
 import glob
+from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 import numpy as np
@@ -130,13 +131,28 @@ def clip_ref_files(clip_gdf, clip_str, fips_args, ref_downloads,
             filled_url = endpoint
         ref_filename = filled_url.split('/')[-1][:-4] + '.shp'
         ref_name_out = str_tokens[-1]
-        ref_filep = '/'.join([ref_dir_uz , fips_args[str_tokens[0]][0], 
-                              ref_name_out, ref_filename])
+        ref_filep = Path(ref_dir_uz) / fips_args[str_tokens[0]][0] / ref_name_out / ref_filename
       
-        print("Found shapefile: " + ref_name_out)
+        if not ref_filep.exists():
+            print(
+                f"Skipping {ref_name_out}: expected file not found:\n"
+                f"  {ref_filep}\n"
+                "This usually means the corresponding ZIP archive was not "
+                "downloaded or could not be extracted."
+            )
+            continue
+
+        print(f"Found shapefile: {ref_filep.name}")
 
         # Read in the file
-        ref_shp = gpd.read_file(ref_filep)
+        try:
+            ref_shp = gpd.read_file(ref_filep)
+        except Exception as e:
+            print(
+                f"Skipping {ref_name_out}: unable to read '{ref_filep.name}'.\n"
+                f"Reason: {e}"
+            )
+            continue
         print("Read reference")
 
         # Reproject and clip our reference shapefile
@@ -308,11 +324,26 @@ def get_ref_ids(exp_gdf, clip_str, ref_id_names_dict, ref_dir_i, exp_dir_i):
         # We don't need to process county if it's in REF_ID_NAMES_DICT
         # because that can be inferred from other reference data
         if ref_name != "county":
-            ref_filep = join(ref_dir_i, clip_str, ref_name + ".gpkg")
+            ref_filep = Path(ref_dir_i) / clip_str / f"{ref_name}.gpkg"
 
-            # Load in the ref file
-            ref_geo = gpd.read_file(ref_filep)
-            print("Read ref file: " + ref_name)
+            if not ref_filep.exists():
+                print(
+                    f"Skipping {ref_name}: reference layer not found:\n"
+                    f"  {ref_filep}\n"
+                    "This reference file may not have been created because the "
+                    "corresponding archive was unavailable or could not be extracted."
+                )
+                continue
+
+            try:
+                ref_geo = gpd.read_file(ref_filep)
+                print(f"Read ref file: {ref_name}")
+            except Exception as e:
+                print(
+                    f"Skipping {ref_name}: unable to read '{ref_filep.name}'.\n"
+                    f"Reason: {e}"
+                )
+                continue
 
             # Limit the geodataframe to our ref id and 'geometry' column
             keep_col = [ref_id, "geometry"]
@@ -350,6 +381,13 @@ def get_ref_ids(exp_gdf, clip_str, ref_id_names_dict, ref_dir_i, exp_dir_i):
             print("Linked reference to structures: " + ref_name + "_id")
 
     # Can concat and write
+    if not ref_df_list:
+        warnings.warn(
+            "No reference IDs were generated because no reference layers "
+            "were available."
+        )
+        return pd.DataFrame(index=exp_gdf.index).reset_index()
+
     return pd.concat(ref_df_list, axis=1).reset_index()
 
 

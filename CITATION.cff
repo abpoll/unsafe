@@ -1,6 +1,6 @@
 cff-version: "1.2.0"
 authors:
-- email: adam.b.pollack@dartmouth.edu
+- email: adam-pollack@uiowa.edu.edu
   family-names: Pollack
   given-names: Adam
   orcid: "https://orcid.org/0000-0001-6642-0591"
@@ -14,7 +14,7 @@ authors:
   given-names: Klaus
   orcid: "https://orcid.org/0000-0002-5451-8687"
 contact:
-- email: adam.b.pollack@dartmouth.edu
+- email: adam-pollack@uiowa.edu.edu
   family-names: Pollack
   given-names: Adam
   orcid: "https://orcid.org/0000-0001-6642-0591"
@@ -23,7 +23,7 @@ message: If you use this software, please cite our article in the
   Journal of Open Source Software.
 preferred-citation:
   authors:
-  - email: adam.b.pollack@dartmouth.edu
+  - email: adam-pollack@uiowa.edu
     family-names: Pollack
     given-names: Adam
     orcid: "https://orcid.org/0000-0001-6642-0591"
