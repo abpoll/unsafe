@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import os
 import json
+from pathlib import Path
 
 from unsafe.const import *
 from unsafe.files import *
@@ -793,23 +794,58 @@ def get_losses(depths_df, ffes, ddf, ddf_types, s_values, vuln_dir_i, base_adj):
     and a given depth-damage function library (i.e. hazus), call
     the corresponding functions to get losses for each scenario/rp
     in depth_ffe_df. This returns relative losses scaled by
-    the quantitites provided in the s_values serires
+    the quantities provided in the s_values series.
 
-    depths_df: DataFrame
-        depths for each scenario/return period under consideration
-    ffes: np.array
-        first floor elevation of ensemble members, same index as depths_df
-    ddf: str, the name of the ddf library
-    ddf_types: Series, the occupancy codes that tell us what ddf to use
-    s_values: Series, the value realizations for the structures
+    Parameters
+    ----------
+    depths_df : pd.DataFrame
+        Depths for each scenario/return period under consideration.
+    ffes : np.ndarray
+        First floor elevations of ensemble members.
+    ddf : str
+        Name of the depth-damage function library ("hazus" or "naccs").
+    ddf_types : pd.Series
+        Occupancy codes that determine which DDF to use.
+    s_values : pd.Series
+        Structure values used to scale relative losses.
+    vuln_dir_i : str or Path
+        Path to the interim vulnerability directory.
+    base_adj : bool
+        Whether to apply bottom-of-basement adjustment for loss estimation.
+
+    Returns
+    -------
+    pd.DataFrame
+        Estimated losses for each scenario/return period.
     """
-    # We need to load ddf data for loss estimation
-    naccs_ddfs = pd.read_parquet(join(vuln_dir_i, "physical", "naccs_ddfs.pqt"))
-    hazus_ddfs = pd.read_parquet(join(vuln_dir_i, "physical", "hazus_ddfs.pqt"))
-    with open(join(vuln_dir_i, "physical", "hazus.json"), "r") as fp:
-        HAZUS_MAX_DICT = json.load(fp)
-    with open(join(vuln_dir_i, "physical", "naccs.json"), "r") as fp:
-        NACCS_MAX_DICT = json.load(fp)
+
+    if ddf not in {"hazus", "naccs"}:
+        raise ValueError(
+            f"Unknown depth-damage function library '{ddf}'. "
+            "Expected 'hazus' or 'naccs'."
+        )
+
+    physical_dir = Path(vuln_dir_i) / "physical"
+
+    ddf_file = physical_dir / f"{ddf}_ddfs.pqt"
+    json_file = physical_dir / f"{ddf}.json"
+
+    if not ddf_file.exists():
+        raise FileNotFoundError(
+            f"Requested {ddf.upper()} depth-damage functions were not found:\n"
+            f"  {ddf_file}"
+        )
+
+    if not json_file.exists():
+        raise FileNotFoundError(
+            f"Requested {ddf.upper()} metadata file was not found:\n"
+            f"  {json_file}"
+        )
+
+    ddfs = pd.read_parquet(ddf_file)
+
+    with open(json_file, "r") as fp:
+        max_dict = json.load(fp)
 
     # Get the relative loss based on the ddf provided
     # and then scale this by the values series
@@ -817,15 +853,15 @@ def get_losses(depths_df, ffes, ddf, ddf_types, s_values, vuln_dir_i, base_adj):
     for d_col in depths_df.columns:
         if ddf == "naccs":
             rel_loss = est_naccs_loss(
-                ddf_types, depths_df[d_col], ffes, naccs_ddfs, NACCS_MAX_DICT, base_adj
+                ddf_types, depths_df[d_col], ffes, ddfs, max_dict, base_adj
             )
         elif ddf == "hazus":
             rel_loss = est_hazus_loss(
-                ddf_types, depths_df[d_col], ffes, hazus_ddfs, HAZUS_MAX_DICT, base_adj
+                ddf_types, depths_df[d_col], ffes, ddfs, max_dict, base_adj
             )
 
         loss[d_col] = rel_loss.values * s_values
-        print("Losses estimated: " + d_col)
+        print(f"Losses estimated: {d_col}")
 
     loss_df = pd.DataFrame.from_dict(loss)
     loss_df.columns = ["loss_" + x for x in loss_df.columns]
