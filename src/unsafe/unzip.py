@@ -7,6 +7,12 @@ from zipfile import BadZipFile, ZipFile
 
 import py7zr
 
+
+SUPPORTED_EXTS = {
+        ".zip",
+        ".7z",
+    }
+
 @dataclass(frozen=True)
 class ArchiveExtraction:
     """Represents a single archive extraction."""
@@ -36,8 +42,6 @@ def discover_archives(
         One extraction plan for each supported archive.
     """
 
-    supported_extensions = {".zip", ".7z"}
-
     extractions = []
 
     for archive_path in archive_root.rglob("*"):
@@ -45,7 +49,7 @@ def discover_archives(
         if (
             not archive_path.is_file()
             or archive_path.name.startswith(".")
-            or archive_path.suffix.lower() not in supported_extensions
+            or archive_path.suffix.lower() not in SUPPORTED_EXTS
         ):
             continue
 
@@ -58,9 +62,9 @@ def discover_archives(
             )
         )
 
-    return extractions.sort(key=lambda extraction: extraction.archive_path)
+    return sorted(extractions, key=lambda extraction: extraction.archive_path)
 
-def unzip_raw(archive_root : Path, oudir_root: Path):
+def unzip_raw(archive_root : Path, outdir_root: Path):
     """
     Extract all supported archives beneath an external data directory.
 
@@ -77,7 +81,7 @@ def unzip_raw(archive_root : Path, oudir_root: Path):
         Root directory where archives will be extracted.
     """
 
-    extractions = discover_archives(external_root, unzipped_root)
+    extractions = discover_archives(archive_root, outdir_root)
 
     counts = Counter(e.output_dir for e in extractions)
     duplicate_dirs = {d for d, n in counts.items() if n > 1}
