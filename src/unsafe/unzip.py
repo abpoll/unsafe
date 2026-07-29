@@ -4,6 +4,8 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile
+from time import perf_counter
+from itertools import groupby
 
 import py7zr
 
@@ -19,6 +21,21 @@ class ArchiveExtraction:
 
     archive_path: Path
     output_dir: Path
+    repository: Path
+
+def format_elapsed(seconds: float) -> str:
+    """Return a human-readable elapsed time."""
+
+    if seconds < 60:
+        return f"{seconds:.1f} s"
+
+    minutes, seconds = divmod(int(seconds), 60)
+
+    if minutes < 60:
+        return f"{minutes:d} min {seconds:02d} s"
+
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours:d} hr {minutes:02d} min"
 
 def discover_archives(
     archive_root: Path,
@@ -53,16 +70,24 @@ def discover_archives(
         ):
             continue
 
-        relative_parent = archive_path.relative_to(archive_root).parent
+        repository = archive_path.relative_to(archive_root).parent
 
         extractions.append(
             ArchiveExtraction(
                 archive_path=archive_path,
-                output_dir=outdir_root / relative_parent,
+                output_dir=outdir_root / repository,
+                repository=repository,
             )
         )
 
-    return sorted(extractions, key=lambda extraction: extraction.archive_path)
+    # Sort in place by repository & archives within
+    extractions.sort(
+        key=lambda extraction: (
+            extraction.repository,
+            extraction.archive_path.name,
+        )
+    )
+    return extractions
 
 def unzip_raw(archive_root : Path, outdir_root: Path):
     """
@@ -80,51 +105,124 @@ def unzip_raw(archive_root : Path, outdir_root: Path):
     outdir_root
         Root directory where archives will be extracted.
     """
-
+    overall_start = perf_counter()
+    
     extractions = discover_archives(archive_root, outdir_root)
 
+    if not extractions:
+        print("No supported archives found.")
+        return
+
+    # User friendly print messages
+    # Report how many repositories found and how many files
+    # to extract within them
+    repository_counts = Counter(
+        extraction.repository for extraction in extractions
+    )
+
+    print("=" * 60)
+    print("Archive Extraction")
+    print("=" * 60)
+    print()
+
+    print(
+        f"Found {len(extractions)} archives "
+        f"across {len(repository_counts)} repositories.\n"
+    )
+
+    width = max(len(str(repository)) for repository in repository_counts)
+
+    for repository, count in sorted(repository_counts.items()):
+        label = "archive" if count == 1 else "archives"
+        print(f"  {str(repository):<{width}} : {count} {label}")
+
+    print()
+
+    # Loop through each file to extract
     counts = Counter(e.output_dir for e in extractions)
     duplicate_dirs = {d for d, n in counts.items() if n > 1}
 
     failed = []
 
-    for extraction in extractions:
+    archive_number = 1
 
-        archive = extraction.archive_path
-        out_dir = extraction.output_dir
+    for repository, archives in groupby(
+        extractions,
+        key=lambda extraction: extraction.repository,
+    ):
 
-        if out_dir in duplicate_dirs:
-            out_dir = out_dir / archive.stem
+        archives = list(archives)
 
-        out_dir.mkdir(parents=True, exist_ok=True)
+        print("-" * 60)
+        print(
+            f"Repository: {repository} "
+            f"({len(archives)} archives)"
+        )
+        print("-" * 60)
 
-        try:
+        for extraction in archives:
 
-            if archive.suffix.lower() == ".zip":
+            archive = extraction.archive_path
+            out_dir = extraction.output_dir
 
-                with ZipFile(archive, "r") as z:
-                    z.extractall(out_dir)
+            if out_dir in duplicate_dirs:
+                out_dir /= archive.stem
 
-            elif archive.suffix.lower() == ".7z":
+            out_dir.mkdir(parents=True, exist_ok=True)
 
-                with py7zr.SevenZipFile(archive, mode="r") as z:
-                    z.extractall(out_dir)
+            start = perf_counter()
 
-            print(f"Extracted: {archive.name}")
+            try:
 
-        except BadZipFile as e:
-            failed.append((archive, f"Invalid ZIP archive ({e})"))
+                if archive.suffix.lower() == ".zip":
 
-        except Exception as e:
-            failed.append((archive, str(e)))
+                    with ZipFile(archive) as z:
+                        z.extractall(out_dir)
+
+                elif archive.suffix.lower() == ".7z":
+
+                    with py7zr.SevenZipFile(archive) as z:
+                        z.extractall(out_dir)
+
+                elapsed = perf_counter() - start
+
+                print(
+                    f"[{archive_number:>3}/{len(extractions)}] "
+                    f"{archive.name:<40}"
+                    f"{format_elapsed(elapsed)}"
+                )
+
+            except BadZipFile as e:
+
+                failed.append((archive, str(e)))
+
+            except Exception as e:
+
+                failed.append((archive, str(e)))
+
+            archive_number += 1
+
+        print()
+
+    print("=" * 60)
+    print("Finished")
+    print("=" * 60)
+
+    print(f"Archives processed : {len(extractions)}")
+    print(f"Succeeded          : {len(extractions) - len(failed)}")
+    print(f"Failed             : {len(failed)}")
+    print(
+        f"Elapsed time       : "
+        f"{format_elapsed(perf_counter() - overall_start)}"
+    )
 
     if failed:
 
-        print("\nThe following archives could not be extracted:\n")
+        print("\nFailed archives:\n")
 
         for archive, reason in failed:
-            print(f"  - {archive.name}")
-            print(f"      Reason: {reason}")
+            print(f"  {archive}")
+            print(f"      {reason}")
 
         print(
             "\nIf the archive uses Deflate64 compression, install "
