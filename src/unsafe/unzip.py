@@ -1,121 +1,125 @@
-# Packages
-from os.path import join
-from pathlib import Path
-import glob
-from zipfile import ZipFile, BadZipFile
+"""Utilities for extracting downloaded archive files."""
+
 from collections import Counter
-from unsafe.files import *
-from unsafe.const import *
+from dataclasses import dataclass
+from pathlib import Path
+from zipfile import BadZipFile, ZipFile
 
+import py7zr
 
-# This function searches through our
-# raw directory tree and
-# returns a list of all the paths
-# to .zip directories
-def zipped_downloads(fr):
-    zip_list = []
-    for path in Path(fr).rglob("*.zip"):
-        # Avoid hidden files and files in directories
-        if path.name[0] != ".":
-            # Add this path to our list of zip directories
-            zip_list.append(str(path))
-    return zip_list
+@dataclass(frozen=True)
+class ArchiveExtraction:
+    """Represents a single archive extraction."""
 
+    archive_path: Path
+    output_dir: Path
 
-# This function gives us all the directory
-# paths for unzipped files
-def unzipped_dirs(fr, unzip_dir):
-    # For each *.zip directory
-    # we want to get the path relative
-    # to raw that the .zip is in
-    # We can use this relative path
-    # and append it to raw/unzipped/
-    # Make this directory
-    # and append to a list of output
-    # files
-    unzip_list = []
-    for path in Path(fr).rglob("*.zip"):
-        # Avoid hidden files and files in directories
-        if path.name[0] != ".":
-            # Get root for the directory this .zip file is in
-            zip_root = path.relative_to(fr).parents[0]
+def discover_archives(
+    archive_root: Path,
+    outdir_root: Path,
+) -> list[ArchiveExtraction]:
+    """
+    Discover supported archives beneath a directory and determine their
+    extraction destinations.
 
-            # Get path to interim/zip_root
-            zip_to_path = join(unzip_dir, zip_root)
+    Parameters
+    ----------
+    archive_root
+        Root directory containing archive files.
 
-            # Make directory, including parents
-            # No need to check if directory exists bc
-            # it is only created when this script is run
-            Path(zip_to_path).mkdir(parents=True, exist_ok=True)
+    outdir_root
+        Root directory where archives will be extracted.
 
-            # Append
-            unzip_list.append(zip_to_path)
-    return unzip_list
+    Returns
+    -------
+    list[ArchiveExtraction]
+        One extraction plan for each supported archive.
+    """
 
+    supported_extensions = {".zip", ".7z"}
 
-# This function gives us our
-# structured directory path -
-# a unique set of these
-def unzipped_downloads():
-    unzip_list = unzipped_dirs()
-    # We need the unique set for the Snakemake
-    return list(set(unzip_list))
+    extractions = []
 
+    for archive_path in archive_root.rglob("*"):
 
-# This function calls the other helpfer functions to unzip
-# all of the external and raw data in our
-# directory. In a many county setting,
-# it probably would make sense for this
-# to work based on state, county, and US
-# arguments to facilitate distributed processing
-def unzip_raw(fr, unzip_dir):
-    # This gives us a list
-    # of files to unzip, and the directories
-    # to unzip them to
-    to_unzip = zipped_downloads(fr)
-    unzip_dirs = unzipped_dirs(fr, unzip_dir)
+        if (
+            not archive_path.is_file()
+            or archive_path.name.startswith(".")
+            or archive_path.suffix.lower() not in supported_extensions
+        ):
+            continue
 
-    # We're going to loop through the files we need to unzip
-    # and extract them into the appropriate directories
-    # One thing that will help the directory structure stay organized
-    # is to keep track of what the destination parent directory is
-    # If the parent directory appears multiple times in unzip_dirs
-    # we should also use the name of the file (excluding extension)
-    # as a subdirectory
-    # We can use the Counter() class from collections for this...
-    count = Counter(unzip_dirs)
-    need_subdir = [k for k, v in count.items() if v > 1]
+        relative_parent = archive_path.relative_to(archive_root).parent
+
+        extractions.append(
+            ArchiveExtraction(
+                archive_path=archive_path,
+                output_dir=outdir_root / relative_parent,
+            )
+        )
+
+    return extractions.sort(key=lambda extraction: extraction.archive_path)
+
+def unzip_raw(archive_root : Path, oudir_root: Path):
+    """
+    Extract all supported archives beneath an external data directory.
+
+    Archives sharing the same parent directory are extracted into
+    separate subdirectories named after the archive stem to avoid
+    collisions.
+
+    Parameters
+    ----------
+    archive_root
+        Root directory containing archive files.
+
+    outdir_root
+        Root directory where archives will be extracted.
+    """
+
+    extractions = discover_archives(external_root, unzipped_root)
+
+    counts = Counter(e.output_dir for e in extractions)
+    duplicate_dirs = {d for d, n in counts.items() if n > 1}
 
     failed = []
 
-    for i, filepath in enumerate(to_unzip):
-        path = Path(filepath)
+    for extraction in extractions:
 
-        # If unzip_dirs[i] is in need_subdir
-        # we are going to add a subdirectory
-        # from the stem of the filepath
-        # This gives us cdc from cdc.zip, for example
+        archive = extraction.archive_path
+        out_dir = extraction.output_dir
 
-        out_filedir = unzip_dirs[i]
-        if unzip_dirs[i] in need_subdir:
-            out_filedir = join(out_filedir, path.stem)
+        if out_dir in duplicate_dirs:
+            out_dir = out_dir / archive.stem
+
+        out_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            with ZipFile(path, "r") as zip_ref:
-                zip_ref.extractall(out_filedir)
 
-            print(f"Unzipped: {path.name}")
+            if archive.suffix.lower() == ".zip":
+
+                with ZipFile(archive, "r") as z:
+                    z.extractall(out_dir)
+
+            elif archive.suffix.lower() == ".7z":
+
+                with py7zr.SevenZipFile(archive, mode="r") as z:
+                    z.extractall(out_dir)
+
+            print(f"Extracted: {archive.name}")
 
         except BadZipFile as e:
-            failed.append((path, f"Invalid or unsupported ZIP archive ({e})"))
+            failed.append((archive, f"Invalid ZIP archive ({e})"))
 
         except Exception as e:
-            failed.append((path, str(e)))
+            failed.append((archive, str(e)))
 
     if failed:
-        print("\nThe following archives could not be extracted:")
-        for path, reason in failed:
-            print(f"  - {path.name}")
+
+        print("\nThe following archives could not be extracted:\n")
+
+        for archive, reason in failed:
+            print(f"  - {archive.name}")
             print(f"      Reason: {reason}")
 
         print(
