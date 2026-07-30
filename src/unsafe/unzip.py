@@ -40,6 +40,7 @@ def format_elapsed(seconds: float) -> str:
 def discover_archives(
     archive_root: Path,
     outdir_root: Path,
+    retain_root: bool = False,
 ) -> list[ArchiveExtraction]:
     """
     Discover supported archives beneath a directory and determine their
@@ -52,6 +53,10 @@ def discover_archives(
 
     outdir_root
         Root directory where archives will be extracted.
+
+    retain_root
+        If True, preserve the name of archive_root as the top-level
+        output directory beneath outdir_root.
 
     Returns
     -------
@@ -70,7 +75,13 @@ def discover_archives(
         ):
             continue
 
+        # Repository relative to the archive root
         repository = archive_path.relative_to(archive_root).parent
+
+        # Optionally preserve the archive root directory
+        # in the output structure
+        if retain_root:
+            repository = Path(archive_root.name) / repository
 
         extractions.append(
             ArchiveExtraction(
@@ -89,7 +100,7 @@ def discover_archives(
     )
     return extractions
 
-def unzip_raw(archive_root : Path, outdir_root: Path):
+def unzip_raw(archive_root : Path, outdir_root: Path, retain_root: bool = False,):
     """
     Extract all supported archives beneath an external data directory.
 
@@ -104,10 +115,14 @@ def unzip_raw(archive_root : Path, outdir_root: Path):
 
     outdir_root
         Root directory where archives will be extracted.
+
+    retain_root
+        If True, preserve the name of archive_root as the top-level
+        output directory beneath outdir_root.
     """
     overall_start = perf_counter()
     
-    extractions = discover_archives(archive_root, outdir_root)
+    extractions = discover_archives(archive_root, outdir_root, retain_root=retain_root)
 
     if not extractions:
         print("No supported archives found.")
