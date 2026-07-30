@@ -6,6 +6,7 @@ import yaml
 from yaml.loader import SafeLoader
 import requests
 import json
+import pandas as pd
 import unsafe.files as unfile
 import unsafe.const as unconst 
 
@@ -101,6 +102,16 @@ def download_api(url, save_path):
     with open(save_path, "w") as fd:
         json.dump(data, fd)
 
+def process_download_config(config):
+    """
+    Convert the download section of a configuration dictionary into
+    a dataframe suitable for download_raw().
+    """
+
+    return pd.json_normalize(
+        config["download"],
+        sep="_",
+    ).T
 
 # The download_raw function
 # We are going to iterate through our
