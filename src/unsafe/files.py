@@ -77,13 +77,17 @@ def fill_wcard(wcard_str, wcard_dict):
     >>> fill_wcard(filepath, wcard_dict)
     'data/US/PA/counties.shp'
     """
+    is_path = isinstance(wcard_str, Path)
+
+    if is_path:
+        wcard_str = str(wcard_str)
 
     # Get a list of all the wildcards we need to replace for this string
     wildcards = [wcard for wcard in wcard_dict.keys() if wcard in wcard_str]
     
     # If no wcard tokens, we can just return the endpoint
     if not wildcards:
-        return wcard_str
+        return Path(wcard_str) if is_path else wcard_str
 
     # Replace the wildcard with the value stored in a wildcard dictionary
     replaced_str = wcard_str
@@ -94,7 +98,7 @@ def fill_wcard(wcard_str, wcard_dict):
             wcard_dict[wildcard],
         )
     
-    return replaced_str
+    return Path(replaced_str) if is_path else replaced_str
 
 # Helper function for reading in hazard data
 # This may have to be modified on a study-by-study

@@ -40,7 +40,7 @@ def format_elapsed(seconds: float) -> str:
 def discover_archives(
     archive_root: Path,
     outdir_root: Path,
-    retain_root: bool = False,
+    relative_to: Path | None = None,
 ) -> list[ArchiveExtraction]:
     """
     Discover supported archives beneath a directory and determine their
@@ -54,9 +54,9 @@ def discover_archives(
     outdir_root
         Root directory where archives will be extracted.
 
-    retain_root
-        If True, preserve the name of archive_root as the top-level
-        output directory beneath outdir_root.
+    relative_to
+        Preserve the directory structure relative to this parent directory.
+        If None, output paths are constructed relative to archive_root.
 
     Returns
     -------
@@ -75,13 +75,12 @@ def discover_archives(
         ):
             continue
 
-        # Repository relative to the archive root
-        repository = archive_path.relative_to(archive_root).parent
-
-        # Optionally preserve the archive root directory
-        # in the output structure
-        if retain_root:
-            repository = Path(archive_root.name) / repository
+        # Repository relative to either the archive root or a
+        # user-specified parent directory
+        if relative_to is None:
+            repository = archive_path.relative_to(archive_root).parent
+        else:
+            repository = archive_path.relative_to(relative_to).parent
 
         extractions.append(
             ArchiveExtraction(
@@ -100,7 +99,9 @@ def discover_archives(
     )
     return extractions
 
-def unzip_raw(archive_root : Path, outdir_root: Path, retain_root: bool = False,):
+def unzip_raw(archive_root : Path,
+              outdir_root: Path,
+              relative_to: Path | None = None):
     """
     Extract all supported archives beneath an external data directory.
 
@@ -116,13 +117,15 @@ def unzip_raw(archive_root : Path, outdir_root: Path, retain_root: bool = False,
     outdir_root
         Root directory where archives will be extracted.
 
-    retain_root
-        If True, preserve the name of archive_root as the top-level
-        output directory beneath outdir_root.
+    relative_to
+        Preserve the directory structure relative to this parent directory.
+        If None, output paths are constructed relative to archive_root.
     """
     overall_start = perf_counter()
     
-    extractions = discover_archives(archive_root, outdir_root, retain_root=retain_root)
+    extractions = discover_archives(archive_root,
+                                    outdir_root,
+                                    relative_to=relative_to)
 
     if not extractions:
         print("No supported archives found.")
