@@ -142,6 +142,32 @@ def process_download_config(config):
         sep="_",
     ).T
 
+def process_ref_config(download_config):
+    """
+    Convert the reference download configuration into a dictionary
+    describing where each reference layer is stored.
+    """
+
+    ref_info = {}
+
+    for ref_id, endpoint_types in download_config.items():
+
+        for endpoint_type in endpoint_types.values():
+
+            ref = endpoint_type.get("ref")
+
+            if ref is None:
+                continue
+
+            for ref_name in ref:
+
+                ref_info[ref_name] = {
+                    "id": ref_id,
+                    "name": config["ref_names"][ref_name],
+                }
+
+    return ref_info
+
 def download_raw(
     files,
     wcard_dict,

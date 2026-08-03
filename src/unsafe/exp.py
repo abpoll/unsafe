@@ -67,8 +67,15 @@ def get_struct_subset(nsi_gdf, filter=None, sub_cols=[], occtype_list=[]):
     return nsi_sub
 
 
-def clip_ref_files(clip_gdf, clip_str, fips_args, ref_downloads,
-                   wcard_dict, ref_dir_uz, ref_dir_i):
+def clip_ref_files(
+    clip_gdf,
+    clip_str,
+    ref_info,
+    wcard_dict,
+    ref_names_dict,
+    ref_dir_uz,
+    ref_dir_i,
+):
     """
     Clip reference shapefiles to a specified geometry and save the results.
     
@@ -87,19 +94,23 @@ def clip_ref_files(clip_gdf, clip_str, fips_args, ref_downloads,
         the FIPS code for the county or area being processed. Can also be
         the name of a catchment area or other unit that may overlap with
         several counties. 
+    
+    ref_info : dict
+        Dictionary describing each reference layer. Each entry
+        contains the wildcard identifier used to locate the
+        downloaded data and the standardized output name.
 
-    fips_args: dict
-        A dictionary of the FIPS, STATEFIPS, and NATION key/value pairs for
-        a specific call of this function. 
-    
-    ref_downloads: pd.DataFrame
-        A subset of the DOWNLOADS dataframe, subset to 
-        those for ref files, which we use to efficiently find
-        the .shp files for clipping. 
-    
-    wcard_dict: dict
-        A dictionary of the form wildcard strings take (e.g., {FIPS}) to the
-        value of those keys for a specific call of this function. 
+    wcard_dict : dict
+        Dictionary of wildcard strings to their values for the
+        current county. This is used to select
+        the appropriate top-level reference directory under
+        ref_dir_uz.
+
+    ref_names_dict : dict
+        Dictionary of reference layer names from the project
+        configuration. The keys are the canonical reference names
+        from downloads and the keys are used in output filenames 
+        (for example, "tract", "bg", and "county").
 
     ref_dir_uz : str or Path
         Path to the directory containing unzipped reference shapefiles.
@@ -117,56 +128,104 @@ def clip_ref_files(clip_gdf, clip_str, fips_args, ref_downloads,
     
     Notes
     -----
-    - All reference files are reprojected to match the CRS of clip_gdf before clipping
-    - Output files are saved in GeoPackage (.gpkg) format for better performance
+    - County-level reference layers are expected under the national
+      directory (for example, ref_dir_uz/US/county).
+    - Reference layers are discovered automatically beneath
+      ref_dir_uz and {STATE_ABBR} or {NATION}.
+    - All files within each discovered reference directory are
+      tested as potential vector datasets.
+    - Files that cannot be read by GeoPandas are ignored.
+    - Reference layers that do not intersect the clipping
+      geometry are skipped.
+    - All reference files are reprojected to match the CRS of clip_gdf
+      before clipping.
+    - Output files are saved in GeoPackage (.gpkg) format.
     """
     print("Processing reference files...")
-    
-    # Find all shapefiles in the reference directory
-    for ref_dwnld in ref_downloads.itertuples():
-        str_tokens, endpoint = undown.process_file(ref_dwnld)
-        if any(wcard in endpoint for wcard in wcard_dict.keys()):
-            filled_url = unfile.fill_wcard(endpoint, wcard_dict)
-        else:
-            filled_url = endpoint
-        ref_filename = filled_url.split('/')[-1][:-4] + '.shp'
-        ref_name_out = str_tokens[-1]
-        ref_filep = Path(ref_dir_uz) / fips_args[str_tokens[0]][0] / ref_name_out / ref_filename
-      
-        if not ref_filep.exists():
+
+    print("Processing reference files...")
+
+    for ref_name, info in ref_info.items():
+
+        # Determine the directory containing this
+        # reference layer.
+        ref_dir = (
+            Path(ref_dir_uz)
+            / wcard_dict[f"{{{info['id']}}}"]
+            / ref_name
+        )
+
+        if not ref_dir.exists():
+
             print(
-                f"Skipping {ref_name_out}: expected file not found:\n"
-                f"  {ref_filep}\n"
-                "This usually means the corresponding ZIP archive was not "
-                "downloaded or could not be extracted."
+                f"Skipping '{ref_name}': directory not found.\n"
+                f"  {ref_dir}"
             )
+
             continue
 
-        print(f"Found shapefile: {ref_filep.name}")
+        found_vector = False
 
-        # Read in the file
-        try:
-            ref_shp = gpd.read_file(ref_filep)
-        except Exception as e:
-            print(
-                f"Skipping {ref_name_out}: unable to read '{ref_filep.name}'.\n"
-                f"Reason: {e}"
+        # Attempt to read every file beneath the
+        # reference directory.
+        for path in sorted(ref_dir.rglob("*")):
+
+            if (
+                not path.is_file()
+                or path.name.startswith(".")
+            ):
+                continue
+
+            try:
+                ref_gdf = gpd.read_file(path)
+
+            except Exception:
+                continue
+
+            found_vector = True
+
+            print(f"Read reference: {info['name']}")
+
+            # Reproject to the clipping CRS
+            ref_reproj = ref_gdf.to_crs(
+                clip_gdf.crs,
             )
-            continue
-        print("Read reference")
 
-        # Reproject and clip our reference shapefile
-        ref_reproj = ref_shp.to_crs(clip_gdf.crs)
-        ref_clipped = gpd.clip(ref_reproj, clip_gdf)
-        print("Reprojected and clipped")
+            # Clip to the study boundary
+            ref_clip = gpd.clip(
+                ref_reproj,
+                clip_gdf,
+            )
 
-        # Write file
-        ref_out_filep = join(ref_dir_i, clip_str, ref_name_out + ".gpkg")
-        unfile.prepare_saving(ref_out_filep)
-        ref_clipped.to_file(ref_out_filep, driver="GPKG")
+            # Skip layers with no overlap
+            if ref_clip.empty:
+                continue
 
-        # Helpful message to track progress
-        print("Saved Ref: " + ref_name_out)
+            ref_out_filep = (
+                Path(ref_dir_i)
+                / clip_str
+                / f"{info['name']}.gpkg"
+            )
+
+            unfile.prepare_saving(ref_out_filep)
+
+            ref_clip.to_file(
+                ref_out_filep,
+                driver="GPKG",
+            )
+
+            print(f"Saved Ref: {info['name']}")
+
+        if not found_vector:
+
+            print(
+                f"Skipping '{ref_name}': no supported vector "
+                f"datasets found in\n"
+                f"  {ref_dir}\n"
+                "The directory may contain only auxiliary "
+                "files or vector formats not supported by "
+                "the installed GeoPandas/Fiona drivers."
+            )
 
 
 def process_national_sovi(sovi_list, fips, vuln_dir_r, ref_dir_i, vuln_dir_i):
