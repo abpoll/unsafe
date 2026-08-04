@@ -142,15 +142,37 @@ def process_download_config(config):
         sep="_",
     ).T
 
-def process_ref_config(download_config):
+def process_ref_config(config, wcard_dict, ref_dir_uz):
     """
-    Convert the reference download configuration into a dictionary
-    describing where each reference layer is stored.
+    Process the reference download configuration into a dictionary
+    describing the locations of unzipped reference layers and their
+    standardized output filenames.
+
+    Parameters
+    ----------
+    config : dict
+        Parsed project configuration dictionary.
+
+    wcard_dict : dict
+        Dictionary mapping wildcard strings (e.g.,
+        ``"{STATEABBR}"``) to their values for the current
+        testbed.
+
+    ref_dir_uz : str or Path
+        Root directory containing the unzipped reference
+        layers.
+
+    Returns
+    -------
+    dict
+        Dictionary keyed by the downloaded reference layer name.
+        Each entry contains the unzipped directory containing
+        the reference data and the standardized output filename.
     """
 
     ref_info = {}
 
-    for ref_id, endpoint_types in download_config.items():
+    for ref_id, endpoint_types in config['download'].items():
 
         for endpoint_type in endpoint_types.values():
 
@@ -161,9 +183,27 @@ def process_ref_config(download_config):
 
             for ref_name in ref:
 
+                # Look for a dedicated reference directory
+                # (e.g., ref/NJ/tract). Otherwise, fall back to the
+                # wildcard root (e.g., ref/NJ) and allow downstream
+                # discovery to locate the dataset.
+                unzip_root = (
+                    Path(ref_dir_uz)
+                    / wcard_dict[f"{{{ref_id}}}"]
+                    / ref_name
+                )
+            
+                if not unzip_root.exists():
+                    unzip_root = (
+                        Path(ref_dir_uz)
+                        / wcard_dict[f"{{{ref_id}}}"]
+                    )
+
                 ref_info[ref_name] = {
-                    "id": ref_id,
-                    "name": config["ref_names"][ref_name],
+                    "unzip_root": unzip_root,
+                    "write_filename": (
+                        f"{config['ref_names'][ref_name]}.gpkg"
+                    ),
                 }
 
     return ref_info

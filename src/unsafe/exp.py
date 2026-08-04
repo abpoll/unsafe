@@ -71,9 +71,6 @@ def clip_ref_files(
     clip_gdf,
     clip_str,
     ref_info,
-    wcard_dict,
-    ref_names_dict,
-    ref_dir_uz,
     ref_dir_i,
 ):
     """
@@ -99,27 +96,11 @@ def clip_ref_files(
         Dictionary describing each reference layer. Each entry
         contains the wildcard identifier used to locate the
         downloaded data and the standardized output name.
-
-    wcard_dict : dict
-        Dictionary of wildcard strings to their values for the
-        current county. This is used to select
-        the appropriate top-level reference directory under
-        ref_dir_uz.
-
-    ref_names_dict : dict
-        Dictionary of reference layer names from the project
-        configuration. The keys are the canonical reference names
-        from downloads and the keys are used in output filenames 
-        (for example, "tract", "bg", and "county").
-
-    ref_dir_uz : str or Path
-        Path to the directory containing unzipped reference shapefiles.
-        Expected structure is ref_dir_uz/[NATION]/[TYPE]/tl_YYYY_[FIPS]_[TYPE].shp
-        Example: "data/raw/unzipped/ref/US/county/tl_2022_us_county.shp"
+        Typically produced by ``process_ref_config()``.
     
     ref_dir_i : str or Path
         Path to the interim directory where clipped files will be saved.
-        Files will be saved as ref_dir_i/[FIPS]/[STANDARDIZED_NAME].gpkg
+        Files will be saved as ref_dir_i/clip_str/[STANDARDIZED_NAME].gpkg
     
     Returns
     -------
@@ -128,32 +109,23 @@ def clip_ref_files(
     
     Notes
     -----
-    - County-level reference layers are expected under the national
-      directory (for example, ref_dir_uz/US/county).
-    - Reference layers are discovered automatically beneath
-      ref_dir_uz and {STATE_ABBR} or {NATION}.
-    - All files within each discovered reference directory are
-      tested as potential vector datasets.
+    - Every file beneath each unzipped reference directory is
+      tested as a potential vector dataset.
     - Files that cannot be read by GeoPandas are ignored.
     - Reference layers that do not intersect the clipping
       geometry are skipped.
-    - All reference files are reprojected to match the CRS of clip_gdf
-      before clipping.
-    - Output files are saved in GeoPackage (.gpkg) format.
     """
-    print("Processing reference files...")
-
+    SUPPORTED_VECTOR_EXTS = {
+        ".shp",
+        ".gpkg",
+        ".geojson",
+    }
+    
     print("Processing reference files...")
 
     for ref_name, info in ref_info.items():
 
-        # Determine the directory containing this
-        # reference layer.
-        ref_dir = (
-            Path(ref_dir_uz)
-            / wcard_dict[f"{{{info['id']}}}"]
-            / ref_name
-        )
+        ref_dir = info["unzip_root"]
 
         if not ref_dir.exists():
 
@@ -172,7 +144,7 @@ def clip_ref_files(
 
             if (
                 not path.is_file()
-                or path.name.startswith(".")
+                or path.suffix.lower() not in SUPPORTED_VECTOR_EXTS
             ):
                 continue
 
@@ -184,7 +156,7 @@ def clip_ref_files(
 
             found_vector = True
 
-            print(f"Read reference: {info['name']}")
+            print(f"Read reference: {ref_name}")
 
             # Reproject to the clipping CRS
             ref_reproj = ref_gdf.to_crs(
@@ -204,7 +176,7 @@ def clip_ref_files(
             ref_out_filep = (
                 Path(ref_dir_i)
                 / clip_str
-                / f"{info['name']}.gpkg"
+                / info["write_filename"]
             )
 
             unfile.prepare_saving(ref_out_filep)
@@ -214,7 +186,7 @@ def clip_ref_files(
                 driver="GPKG",
             )
 
-            print(f"Saved Ref: {info['name']}")
+            print(f"Saved Ref: {ref_out_filep.name}")
 
         if not found_vector:
 
