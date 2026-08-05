@@ -139,6 +139,7 @@ def prep_nsi_exp(
             "found_type",
             "num_story",
             "found_ht",
+            "sqft"
         ]
     nsi_exp = nsi_struct[keep_cols].copy()
 

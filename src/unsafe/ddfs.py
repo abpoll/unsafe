@@ -869,36 +869,98 @@ def get_losses(depths_df, ffes, ddf, ddf_types, s_values, vuln_dir_i, base_adj):
     return loss_df
 
 
-def get_eal(loss_df, rp_list):
+
+def get_eal(
+    loss_df,
+    rp_list,
+    loss_str="",
+):
     """
-    We use trapezoidal approximation to get the expected annual loss
-    from a dataframe of losses based on design events. rp_list
-    is sorted from most to least frequent design event
+    Calculate expected annual loss (EAL) using trapezoidal integration.
 
-    loss_df: DataFrame, losses in different design events
-    rp_list: list of str, sorted list of the return period from
-    most to least frequent
+    Expected annual loss is calculated by integrating the loss-
+    exceedance curve defined by losses at discrete return periods.
+    Losses are assumed to vary linearly between adjacent return
+    periods.
+
+    Parameters
+    ----------
+    loss_df : pandas.DataFrame
+        DataFrame containing losses for one or more return periods.
+
+    rp_list : sequence
+        Return periods corresponding to the loss columns. Return
+        periods are expected to be ordered from most frequent to
+        least frequent (smallest to largest return period). If they
+        are not, they will be sorted automatically.
+
+    loss_str : str, default=""
+        Prefix used in the loss column names. For example,
+        ``loss_str="loss"`` corresponds to columns such as
+        ``loss_10`` and ``loss_100``. If an empty string is
+        supplied, the function assumes the columns are named only by
+        their return periods.
+
+    Returns
+    -------
+    pandas.Series
+        Expected annual loss for each row of ``loss_df``.
     """
-    p_rp_list = [round(1 / int(x), 4) for x in rp_list]
-    loss_list = ["loss_" + str(x) for x in rp_list]
 
-    # Need eal series with the same index as the loss_df
-    eal = pd.Series(index=loss_df.index).fillna(0)
+    # Convert return periods to integers.
+    rp_list = np.asarray(rp_list, dtype=int)
 
-    # We loop through our loss list and apply the
-    # trapezoidal approximation
-    # We need these to be sorted from most frequent
-    # to least frequent
-    for i in range(len(loss_list) - 1):
-        loss1 = loss_df[loss_list[i]]
-        loss2 = loss_df[loss_list[i + 1]]
-        rp1 = p_rp_list[i]
-        rp2 = p_rp_list[i + 1]
-        eal += (loss1 + loss2) * (rp1 - rp2) / 2
-    final = eal + loss_df[loss_list[-1]] * p_rp_list[-1]
+    # Ensure return periods are ordered from most
+    # frequent to least frequent.
+    if not np.all(np.diff(rp_list) > 0):
 
-    # This is the final trapezoid to add in
-    final_eal = eal + loss_df[loss_list[-1]] * p_rp_list[-1]
+        print(
+            "Warning: Return periods were not ordered "
+            "from most frequent to least frequent. "
+            "Sorting automatically."
+        )
+
+        sort_idx = np.argsort(rp_list)
+        rp_list = rp_list[sort_idx]
+
+    # Corresponding loss columns.
+    if loss_str:
+        loss_cols = [
+            f"{loss_str}_{rp}"
+            for rp in rp_list
+        ]
+    else:
+        loss_cols = [
+            str(rp)
+            for rp in rp_list
+        ]
+
+    # Annual exceedance probabilities.
+    aep = 1 / rp_list
+
+    # Initialize expected annual loss.
+    eal = pd.Series(
+        0.0,
+        index=loss_df.index,
+    )
+
+    # Trapezoidal integration.
+    for i in range(len(loss_cols) - 1):
+
+        eal += (
+            loss_df[loss_cols[i]]
+            + loss_df[loss_cols[i + 1]]
+        ) * (
+            aep[i] - aep[i + 1]
+        ) / 2
+
+    # Final trapezoid extending to zero annual
+    # exceedance probability.
+    eal += (
+        loss_df[loss_cols[-1]]
+        * aep[-1]
+    )
+
     print("Calculated EAL")
 
-    return final_eal
+    return eal
