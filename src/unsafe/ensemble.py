@@ -441,11 +441,21 @@ def get_loss_ensemble(
     # To prepare this, we need to do some pre-processing on the losses &
     # eals dicts, adding the ddf name before the columns in the associated
     # dataframe.
-    final_losses = pd.DataFrame(index=depths_df.index)
-    for ddf, df in losses.items():
-        df.columns = [ddf + "_" + x for x in df.columns]
-        final_losses = pd.concat([final_losses, df], axis=1)
 
+    # Prefix each loss column with the DDF name
+    for ddf, df in losses.items():
+        df.columns = [f"{ddf}_{col}" for col in df.columns]
+
+    # Combine the loss estimates for each DDF.
+    # All loss dataframes share the ensemble index.
+    final_losses = pd.concat(
+        losses.values(),
+        axis=1,
+    )
+
+    # Assemble the final ensemble dataframe.
+    # Everything is aligned on the ensemble index, while
+    # id_col is retained as a column for later alignment.
     final_ens_df = pd.concat(
         [
             ens_df[[id_col]],
@@ -457,9 +467,14 @@ def get_loss_ensemble(
         ],
         axis=1,
     )
-    # Let's also get the SOW index - start at 0
-    sow_ind = np.arange(len(final_ens_df)) % n_sow
-    final_ens_df = pd.concat([final_ens_df, pd.Series(sow_ind, name="sow_ind")], axis=1)
+
+    # Add the state-of-world identifier.
+    # Ensemble members for the same structure are ordered
+    # consecutively, so the SOW index repeats from
+    # 0 to n_sow - 1 for each structure.
+    final_ens_df["sow_ind"] = (
+        np.arange(len(final_ens_df)) % n_sow
+    )
 
     print("Prepared final ensemble")
 

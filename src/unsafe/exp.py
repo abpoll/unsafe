@@ -19,6 +19,7 @@ os.environ["USE_PYGEOS"] = "0"
 import unsafe.download as undown
 import unsafe.files as unfile
 import unsafe.const as uncnst
+import unsafe.util as unutil
 
 
 def get_nsi_geo(fips, nsi_crs, exp_dir_r):
@@ -66,6 +67,178 @@ def get_struct_subset(nsi_gdf, filter=None, sub_cols=[], occtype_list=[]):
 
     return nsi_sub
 
+def prep_nsi_exp(
+    nsi_struct,
+    nsi_ref,
+    depths=None,
+    ddfs=None,
+    nsi_fz=None,
+    keep_cols=None,
+    depth_min=None,
+):
+    """
+    Prepare an NSI exposure inventory for loss ensemble.
+
+    This function standardizes NSI processing for loss estimation by retaining
+    the desired inventory fields, joining reference identifiers, and
+    deriving variables used throughout the risk workflow.
+    Optionally, the inventory may be subset to structures exposed to
+    flooding and augmented with information for DDFs that require it.
+
+    Parameters
+    ----------
+    nsi_struct : geopandas.GeoDataFrame
+        NSI to be processed.
+
+    nsi_ref : pandas.DataFrame
+        Reference identifiers for each structure. Must contain
+        ``fd_id`` and any spatial identifiers (e.g., tract_id,
+        bg_id) required for downstream analyses.
+
+    depths : pandas.DataFrame or list of pandas.DataFrame, optional
+        Structure-indexed flood depths used to identify exposed
+        structures. If a list is supplied, the union of exposed
+        structures is retained.
+
+    ddfs : str or list of str, optional
+        Damage-depth functions to be used in downstream analyses.
+        If any requested DDF requires flood-zone information
+        (currently Hazus), ``nsi_fz`` must also be supplied.
+
+    nsi_fz : pandas.DataFrame, optional
+        Flood-zone information indexed by ``fd_id``. Required when
+        Hazus DDFs are requested.
+
+    keep_cols : list of str, optional
+        Inventory columns to retain from the NSI structure
+        inventory. If None, a default set of exposure fields is
+        used.
+
+    depth_min : float, optional
+        Minimum flood depth used to classify a structure as
+        exposed. If None, any depth greater than zero is retained.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Analysis-ready exposure inventory indexed by ``fd_id``.
+
+    Notes
+    -----
+    The returned dataframe is intended to be the canonical county-
+    level exposure inventory used throughout the risk workflow.
+    """
+
+    # Retain requested inventory fields
+    if keep_cols is None:
+        keep_cols = [
+            "fd_id",
+            "occtype",
+            "val_struct",
+            "bldgtype",
+            "found_type",
+            "num_story",
+            "found_ht",
+        ]
+    nsi_exp = nsi_struct[keep_cols].copy()
+
+    # Ensure required dataframes are indexed by fd_id
+    required = {
+        "nsi_struct": nsi_exp,
+        "nsi_ref": nsi_ref,
+    }
+
+    for name, df in required.items():
+        required[name] = unutil.ensure_fd_id_index(
+            df,
+            name,
+        )
+
+    nsi_exp = required["nsi_struct"]
+    nsi_ref = required["nsi_ref"]
+    
+    # Join spatial reference identifiers.
+    nsi_exp = nsi_exp.join(
+        nsi_ref,
+        how="left",
+    )
+
+    # Derive number of stories encoded in the
+    # residential occupancy string.
+    structs = (
+        nsi_exp["occtype"]
+        .str.split("-")
+        .str[1]
+    )
+
+    nsi_exp["stories"] = structs.str[:2]
+
+    # Update occtype for DDF assignment
+    # (e.g., RES1-1SWB becomes RES1)
+    nsi_exp['occtype'] = nsi_exp['occtype'].str.split("-").str[0]
+
+    # Subset to flood-exposed structures
+    if depths is not None:
+
+        if not isinstance(depths, (list, tuple)):
+            depths = [depths]
+
+        # Check for fd_id index
+        depths = [
+            unutil.ensure_fd_id_index(
+                depth_df,
+                f"depths[{i}]",
+            )
+            for i, depth_df in enumerate(depths)
+        ]
+        
+        exposed_ids = set()
+
+        for depth_df in depths:
+
+            if depth_min is None:
+                mask = (depth_df > 0).any(axis=1)
+            else:
+                mask = (depth_df >= depth_min).any(axis=1)
+
+            exposed_ids.update(depth_df.index[mask])
+
+        nsi_exp = nsi_exp.loc[
+            nsi_exp.index.intersection(exposed_ids)
+        ]
+
+    # Join flood-zone information if required
+    if ddfs is not None:
+
+        if isinstance(ddfs, str):
+            ddfs = [ddfs]
+
+        if any(ddf.lower() == "hazus" for ddf in ddfs):
+
+            if nsi_fz is None:
+                raise ValueError(
+                    "Hazus DDFs require 'nsi_fz'."
+                )
+
+            nsi_fz = unutil.ensure_fd_id_index(
+                nsi_fz,
+                "nsi_fz",
+            )
+
+            nsi_exp = nsi_exp.join(
+                nsi_fz,
+                how="left",
+            )
+
+            # Collapse detailed flood zones into
+            # the categories required by Hazus.
+            nsi_exp["fz_ddf"] = np.where(
+                nsi_exp["fld_zone"].str.startswith("V"),
+                "V",
+                "A",
+            )
+
+    return nsi_exp
 
 def clip_ref_files(
     clip_gdf,
