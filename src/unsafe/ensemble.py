@@ -197,9 +197,12 @@ def get_loss_ensemble(
     print(f"Generating ensemble with {n_sow} states of the world...")
     print(f"Uncertain characteristics: {struct_list}")
 
-    # Drop any depths as required
-    # If depth_min is 0, this drops any null depths
-    depths_df = depths_df[depths_df.sum(axis=1) > depth_min]
+    # Treat any depth at or below depth_min as no flooding in that event.
+    # NaN depths skip the FFE adjustment and get zero loss.
+    depths_df = depths_df.where(depths_df > depth_min)
+
+    # Drop structures with no flooding in any event
+    depths_df = depths_df.dropna(how="all")
 
     # Convert depths to ft
     depths_df = depths_df*unconst.MTR_TO_FT
